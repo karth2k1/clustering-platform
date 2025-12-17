@@ -357,10 +357,24 @@ class ClusterAnalysisService:
             # Generate importance explanation
             importance = ClusterAnalysisService._generate_cluster_importance(insight, len(df))
             
+            # Get clustering features explanation
+            clustering_explanation = {
+                "title": "Why Same Alarm Codes Are in Different Clusters",
+                "description": "Clustering uses multiple features (not just alarm code) to group alarms. Alarms with the same code can be separated if they differ in:",
+                "features": [
+                    "Affected object type and location",
+                    "Object identifiers and relationships",
+                    "Temporal patterns",
+                    "Other alarm characteristics"
+                ],
+                "note": "This is expected behavior - the same alarm code on different systems/objects forms separate clusters, helping identify which specific objects or systems are affected."
+            }
+            
             return {
                 "cluster_id": int(cluster_id),
                 "insight": insight,
                 "importance": importance,
+                "clustering_explanation": clustering_explanation,
                 "alarm_count": int(len(alarms)),
                 "alarms": alarms
             }
