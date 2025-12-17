@@ -19,26 +19,61 @@ def preprocess_data(df: pd.DataFrame) -> Tuple[Optional[np.ndarray], List[str]]:
     # Select numeric columns
     numeric_cols = df.select_dtypes(include=[np.number]).columns.tolist()
     
+    # Filter out columns that are all NaN or have no variance
+    valid_numeric_cols = []
+    for col in numeric_cols:
+        col_data = df[col]
+        # Skip if all NaN or constant (no variance)
+        if col_data.notna().sum() > 0 and col_data.nunique() > 1:
+            valid_numeric_cols.append(col)
+    
+    numeric_cols = valid_numeric_cols
+    
     if not numeric_cols:
-        # If no numeric columns, encode categorical
+        # If no valid numeric columns, encode categorical
         categorical_cols = df.select_dtypes(include=['object', 'category']).columns.tolist()
         if not categorical_cols:
             return None, []
         
-        # Encode categorical variables
-        data = df[categorical_cols].copy()
+        # Filter categorical columns that have some variance
+        valid_categorical_cols = []
         for col in categorical_cols:
+            if df[col].nunique() > 1:  # At least 2 unique values
+                valid_categorical_cols.append(col)
+        
+        if not valid_categorical_cols:
+            return None, []
+        
+        # Encode categorical variables
+        data = df[valid_categorical_cols].copy()
+        for col in valid_categorical_cols:
             le = LabelEncoder()
-            data[col] = le.fit_transform(data[col].astype(str))
-        numeric_cols = categorical_cols
+            # Fill NaN with a placeholder before encoding
+            data[col] = le.fit_transform(data[col].fillna('__MISSING__').astype(str))
+        numeric_cols = valid_categorical_cols
     else:
         data = df[numeric_cols].copy()
     
-    # Handle missing values
-    data = data.dropna()
+    # Handle missing values - drop rows where ALL values are NaN
+    # But keep rows where at least one value is present
+    data = data.dropna(how='all')
     
-    if len(data) == 0:
+    # Also drop columns that became all NaN after row drops
+    data = data.dropna(axis=1, how='all')
+    
+    # Update numeric_cols to match remaining columns
+    numeric_cols = [col for col in numeric_cols if col in data.columns]
+    
+    if len(data) == 0 or len(numeric_cols) == 0:
         return None, []
+    
+    # Fill remaining NaN values with column median (for numeric) or mode (for encoded categorical)
+    for col in data.columns:
+        if data[col].isna().any():
+            if data[col].dtype in [np.number]:
+                data[col].fillna(data[col].median(), inplace=True)
+            else:
+                data[col].fillna(data[col].mode()[0] if len(data[col].mode()) > 0 else 0, inplace=True)
     
     # Scale features
     scaler = StandardScaler()
