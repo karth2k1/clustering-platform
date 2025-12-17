@@ -173,6 +173,11 @@ export const getClusterDetails = async (resultId: string, clusterId: number) => 
   return response.data;
 };
 
+export const getNoisePoints = async (resultId: string) => {
+  const response = await apiClient.get(`/api/clustering/analysis/${resultId}/noise`);
+  return response.data;
+};
+
 // Notebooks
 export const createNotebook = async (dataFileId: string) => {
   const response = await apiClient.post('/api/notebooks/create', {

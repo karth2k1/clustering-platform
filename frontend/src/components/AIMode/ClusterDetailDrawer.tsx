@@ -1,6 +1,6 @@
 import { useState } from 'react';
 import { useQuery } from '@tanstack/react-query';
-import { getClusterDetails } from '../../services/api';
+import { getClusterDetails, getNoisePoints } from '../../services/api';
 import '../common/styles.css';
 
 interface ClusterDetailDrawerProps {
@@ -20,9 +20,11 @@ function ClusterDetailDrawer({
 }: ClusterDetailDrawerProps) {
   const [selectedAlarmIndex, setSelectedAlarmIndex] = useState<number | null>(null);
 
+  const isNoisePoints = clusterId === -1;
+  
   const { data: clusterDetails, isLoading } = useQuery({
-    queryKey: ['cluster-details', resultId, clusterId],
-    queryFn: () => getClusterDetails(resultId, clusterId),
+    queryKey: isNoisePoints ? ['noise-points', resultId] : ['cluster-details', resultId, clusterId],
+    queryFn: () => isNoisePoints ? getNoisePoints(resultId) : getClusterDetails(resultId, clusterId),
     enabled: isOpen,
   });
 
@@ -41,7 +43,7 @@ function ClusterDetailDrawer({
       <div className="drawer-container">
         <div className="drawer-header">
           <div>
-            <h2>Cluster {clusterId} Details</h2>
+            <h2>{isNoisePoints ? 'Unique Cases (Noise Points)' : `Cluster ${clusterId} Details`}</h2>
             <p className="drawer-subtitle">{clusterInfo?.description}</p>
           </div>
           <button className="drawer-close" onClick={onClose}>×</button>
@@ -54,8 +56,48 @@ function ClusterDetailDrawer({
             <div className="error">{clusterDetails.error}</div>
           ) : clusterDetails ? (
             <>
+              {/* Clustering Explanation (for regular clusters) */}
+              {!isNoisePoints && clusterDetails.clustering_explanation && (
+                <div className="clustering-explanation-section">
+                  <h3>{clusterDetails.clustering_explanation.title}</h3>
+                  <p>{clusterDetails.clustering_explanation.description}</p>
+                  <ul className="feature-list">
+                    {clusterDetails.clustering_explanation.features.map((feature: string, idx: number) => (
+                      <li key={idx}>{feature}</li>
+                    ))}
+                  </ul>
+                  <p className="explanation-note">{clusterDetails.clustering_explanation.note}</p>
+                </div>
+              )}
+
+              {/* Explanation Section (for noise points) */}
+              {isNoisePoints && clusterDetails.explanation && (
+                <div className="importance-section priority-info">
+                  <h3>{clusterDetails.explanation.title}</h3>
+                  <p className="importance-summary">{clusterDetails.explanation.description}</p>
+                  <ul className="importance-reasons-list">
+                    {clusterDetails.explanation.reasons.map((reason: string, idx: number) => (
+                      <li key={idx}>{reason}</li>
+                    ))}
+                  </ul>
+                  <p className="explanation-note"><strong>Recommendation:</strong> {clusterDetails.explanation.recommendation}</p>
+                  {clusterDetails.code_distribution && Object.keys(clusterDetails.code_distribution).length > 0 && (
+                    <div className="code-distribution">
+                      <strong>Alarm Code Distribution:</strong>
+                      <div className="code-tags">
+                        {Object.entries(clusterDetails.code_distribution).map(([code, count]: [string, any]) => (
+                          <span key={code} className="code-tag">
+                            {code}: {count}
+                          </span>
+                        ))}
+                      </div>
+                    </div>
+                  )}
+                </div>
+              )}
+
               {/* Importance Section */}
-              {clusterDetails.importance && (
+              {clusterDetails.importance && !isNoisePoints && (
                 <div className={`importance-section priority-${clusterDetails.importance.priority}`}>
                   <h3>Why This Cluster Matters</h3>
                   <p className="importance-summary">{clusterDetails.importance.summary}</p>
@@ -79,7 +121,12 @@ function ClusterDetailDrawer({
 
               {/* Alarms List */}
               <div className="alarms-section">
-                <h3>Alarms in This Cluster ({clusterDetails.alarm_count})</h3>
+                <h3>
+                  {isNoisePoints 
+                    ? `Unique Alarms (${clusterDetails.alarm_count} total, ${clusterDetails.unique_alarm_codes} unique codes)`
+                    : `Alarms in This Cluster (${clusterDetails.alarm_count})`
+                  }
+                </h3>
                 <div className="alarms-list">
                   {clusterDetails.alarms.map((alarm: any, idx: number) => (
                     <div 

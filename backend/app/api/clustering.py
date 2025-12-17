@@ -63,3 +63,15 @@ def get_cluster_details(
         raise HTTPException(status_code=404, detail=details["error"])
     return details
 
+
+@router.get("/analysis/{result_id}/noise")
+def get_noise_points(
+    result_id: str,
+    db: Session = Depends(get_db)
+) -> Dict[str, Any]:
+    """Get all noise points (unique cases that don't fit into clusters)"""
+    details = ClusterAnalysisService.get_noise_points(db, result_id)
+    if "error" in details:
+        raise HTTPException(status_code=404, detail=details["error"])
+    return details
+

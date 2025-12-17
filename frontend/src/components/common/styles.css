@@ -1089,3 +1089,75 @@
   font-weight: 500;
   text-align: center;
 }
+
+.clustering-explanation-section {
+  margin-bottom: 2rem;
+  padding: 1.5rem;
+  background: #e8f4f8;
+  border-radius: 8px;
+  border-left: 4px solid #3498db;
+}
+
+.clustering-explanation-section h3 {
+  margin: 0 0 0.75rem 0;
+  color: #2c3e50;
+}
+
+.clustering-explanation-section p {
+  margin: 0 0 0.75rem 0;
+  color: #2c3e50;
+  line-height: 1.6;
+}
+
+.feature-list {
+  margin: 0.75rem 0;
+  padding-left: 1.5rem;
+  color: #2c3e50;
+}
+
+.feature-list li {
+  margin-bottom: 0.5rem;
+  line-height: 1.5;
+}
+
+.explanation-note {
+  margin-top: 1rem;
+  padding: 0.75rem;
+  background: white;
+  border-radius: 4px;
+  font-style: italic;
+  color: #7f8c8d;
+}
+
+.importance-reasons-list {
+  margin: 0.75rem 0;
+  padding-left: 1.5rem;
+  color: #2c3e50;
+}
+
+.importance-reasons-list li {
+  margin-bottom: 0.5rem;
+  line-height: 1.5;
+}
+
+.code-distribution {
+  margin-top: 1rem;
+  padding-top: 1rem;
+  border-top: 1px solid #ecf0f1;
+}
+
+.code-tags {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.5rem;
+  margin-top: 0.5rem;
+}
+
+.code-tag {
+  background: white;
+  padding: 0.25rem 0.75rem;
+  border-radius: 4px;
+  font-family: monospace;
+  font-size: 0.85rem;
+  border: 1px solid #ddd;
+}

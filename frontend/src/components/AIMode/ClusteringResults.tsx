@@ -185,7 +185,18 @@ function ExecutiveView({
                 </div>
               ))}
               {analysis.noise_points > 0 && (
-                <div className="cluster-card cluster-noise">
+                <div 
+                  className="cluster-card cluster-noise clickable"
+                  onClick={() => setSelectedCluster({ 
+                    resultId: resultId!, 
+                    clusterId: -1, 
+                    clusterInfo: { 
+                      cluster_id: -1, 
+                      size: analysis.noise_points, 
+                      description: 'Unique cases that don\'t fit into major patterns' 
+                    } 
+                  })}
+                >
                   <div className="cluster-header">
                     <h4>Unique Cases</h4>
                     <span className="cluster-size">{analysis.noise_points} alarms</span>
@@ -193,6 +204,7 @@ function ExecutiveView({
                   <p className="cluster-description">
                     These alarms don't fit into major patterns and may require individual attention
                   </p>
+                  <div className="cluster-action-hint">Click to view details →</div>
                 </div>
               )}
             </div>

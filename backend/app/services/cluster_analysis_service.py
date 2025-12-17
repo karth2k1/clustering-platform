@@ -369,6 +369,114 @@ class ClusterAnalysisService:
             return {"error": f"Error getting cluster details: {str(e)}"}
     
     @staticmethod
+    def get_noise_points(
+        db: Session,
+        result_id: str
+    ) -> Dict[str, Any]:
+        """
+        Get all noise points (alarms that don't fit into any cluster)
+        
+        Returns:
+            Dictionary with noise point details and alarm data
+        """
+        try:
+            # Get clustering result
+            result = db.query(ClusteringResult).filter(ClusteringResult.id == result_id).first()
+            if not result:
+                return {"error": "Clustering result not found"}
+            
+            # Get data file
+            data_file = FileService.get_file(db, result.data_file_id)
+            if not data_file:
+                return {"error": "Data file not found"}
+            
+            # Load original data
+            file_path = FileService.get_file_path_for_download(data_file)
+            if data_file.file_type == FileType.JSON:
+                df, error = parse_json_file(file_path)
+            else:
+                df, error = pd.read_csv(file_path), None
+            
+            if error or df is None or df.empty:
+                return {"error": f"Error loading data: {error}"}
+            
+            # Add cluster labels
+            cluster_labels = np.array(result.cluster_labels)
+            df['cluster'] = cluster_labels
+            
+            # Filter noise points (cluster_id == -1)
+            noise_data = df[df['cluster'] == -1].copy()
+            
+            if len(noise_data) == 0:
+                return {"error": "No noise points found"}
+            
+            # Extract alarm details (same format as cluster details)
+            alarms = []
+            for idx, row in noise_data.iterrows():
+                alarm = {
+                    "index": int(idx),
+                    "code": str(row.get('Code', 'N/A')),
+                    "name": str(row.get('Name', 'N/A')),
+                    "severity": str(row.get('OrigSeverity', 'N/A')),
+                    "description": str(row.get('Description', 'N/A')),
+                    "affected_mo_type": str(row.get('AffectedMoType', 'N/A')),
+                    "affected_mo_display_name": str(row.get('AffectedMoDisplayName', 'N/A')),
+                    "affected_mo_id": str(row.get('AffectedMoId', 'N/A')),
+                    "acknowledge": str(row.get('Acknowledge', 'N/A')),
+                    "create_time": str(row.get('CreateTime', 'N/A')),
+                    "last_transition_time": str(row.get('LastTransitionTime', 'N/A')),
+                }
+                
+                # Add nested object information if available
+                if pd.notna(row.get('AffectedMo')):
+                    affected_mo = row.get('AffectedMo')
+                    if isinstance(affected_mo, dict):
+                        alarm["affected_mo_details"] = {
+                            "moid": str(affected_mo.get('Moid', 'N/A')),
+                            "object_type": str(affected_mo.get('ObjectType', 'N/A')),
+                            "link": str(affected_mo.get('link', 'N/A'))
+                        }
+                
+                # Add all other fields as additional info
+                additional_info = {}
+                for col in noise_data.columns:
+                    if col not in ['cluster'] and col not in alarm:
+                        val = row.get(col)
+                        if pd.notna(val):
+                            if isinstance(val, (dict, list)):
+                                additional_info[col] = str(val)
+                            else:
+                                additional_info[col] = str(val)
+                
+                alarm["additional_info"] = additional_info
+                alarms.append(alarm)
+            
+            # Analyze noise points
+            unique_codes = noise_data['Code'].nunique() if 'Code' in noise_data.columns else 0
+            code_distribution = dict(noise_data['Code'].value_counts().head(10)) if 'Code' in noise_data.columns else {}
+            
+            return {
+                "alarm_count": int(len(alarms)),
+                "unique_alarm_codes": int(unique_codes),
+                "code_distribution": {str(k): int(v) for k, v in code_distribution.items()},
+                "alarms": alarms,
+                "explanation": {
+                    "title": "Why These Are Unique Cases",
+                    "description": f"These {len(alarms)} alarms don't fit into any major cluster pattern. They may represent:",
+                    "reasons": [
+                        "Rare or one-off issues that don't follow common patterns",
+                        "Alarms with unique combinations of features that differ significantly from clustered alarms",
+                        "Potential new or emerging issues that haven't formed patterns yet",
+                        "Edge cases that require individual investigation"
+                    ],
+                    "recommendation": "Review these alarms individually to identify if they represent new patterns or require special attention."
+                }
+            }
+            
+        except Exception as e:
+            return {"error": f"Error getting noise points: {str(e)}"}
+    
+    @staticmethod
     def _generate_cluster_importance(insight: Dict[str, Any], total_alarms: int) -> Dict[str, Any]:
         """Generate explanation of why this cluster is important"""
         importance_reasons = []
