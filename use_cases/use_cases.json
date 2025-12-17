@@ -1,0 +1,138 @@
+{
+  "intersight_alarms": {
+    "name": "Intersight Alarms Clustering",
+    "description": "Cluster alarms to identify underlying physical entities or root causes. Many alarms may be related to fewer physical entities than the number of alarms themselves.",
+    "data_format": ["json", "csv"],
+    "recommended_algorithms": ["HDBSCAN", "DBSCAN"],
+    "typical_features": ["alarm_type", "severity", "timestamp", "device_id", "alarm_message", "affected_components"],
+    "questions": [
+      {
+        "id": "purpose",
+        "question": "What is the purpose of clustering these alarms?",
+        "type": "text",
+        "required": true,
+        "default": "Identify underlying physical entities or root causes"
+      },
+      {
+        "id": "related_to_fewer_entities",
+        "question": "Are alarms related to fewer physical entities than the number of alarms?",
+        "type": "dropdown",
+        "options": ["Yes", "No", "Unknown"],
+        "required": true,
+        "default": "Yes"
+      },
+      {
+        "id": "noise_level",
+        "question": "What is the expected noise level in your alarm data?",
+        "type": "dropdown",
+        "options": ["Low", "Medium", "High"],
+        "required": true,
+        "default": "High"
+      },
+      {
+        "id": "known_entity_count",
+        "question": "Do you know how many physical entities exist?",
+        "type": "dropdown",
+        "options": ["Yes, exact number", "Yes, approximate range", "No"],
+        "required": true,
+        "default": "No"
+      },
+      {
+        "id": "cluster_size_variation",
+        "question": "Are clusters expected to have similar sizes?",
+        "type": "dropdown",
+        "options": ["Yes", "No", "Unknown"],
+        "required": false,
+        "default": "No"
+      }
+    ],
+    "default_preprocessing": {
+      "handle_missing": "drop",
+      "scale_features": true,
+      "scaler_type": "StandardScaler",
+      "encode_categorical": true
+    },
+    "default_parameters": {
+      "HDBSCAN": {
+        "min_cluster_size": 5,
+        "min_samples": 3
+      },
+      "DBSCAN": {
+        "eps": 0.5,
+        "min_samples": 5
+      }
+    }
+  },
+  "generic": {
+    "name": "Generic Clustering",
+    "description": "A general-purpose clustering use case for exploring data patterns",
+    "data_format": ["json", "csv"],
+    "recommended_algorithms": ["K-Means", "HDBSCAN", "Hierarchical"],
+    "typical_features": [],
+    "questions": [
+      {
+        "id": "purpose",
+        "question": "What is the purpose of clustering?",
+        "type": "text",
+        "required": true,
+        "default": ""
+      },
+      {
+        "id": "known_cluster_count",
+        "question": "Do you know the expected number of clusters?",
+        "type": "dropdown",
+        "options": ["Yes, exact number", "Yes, approximate range", "No"],
+        "required": true,
+        "default": "No"
+      },
+      {
+        "id": "noise_level",
+        "question": "What is the expected noise level in your data?",
+        "type": "dropdown",
+        "options": ["Low", "Medium", "High"],
+        "required": true,
+        "default": "Medium"
+      },
+      {
+        "id": "feature_types",
+        "question": "What types of features do you have?",
+        "type": "dropdown",
+        "options": ["Numerical only", "Categorical only", "Mixed"],
+        "required": true,
+        "default": "Numerical only"
+      },
+      {
+        "id": "cluster_size_variation",
+        "question": "Are clusters expected to have similar sizes?",
+        "type": "dropdown",
+        "options": ["Yes", "No", "Unknown"],
+        "required": false,
+        "default": "Unknown"
+      },
+      {
+        "id": "cluster_shape",
+        "question": "What shape are clusters expected to have?",
+        "type": "dropdown",
+        "options": ["Spherical/round", "Irregular/arbitrary", "Unknown"],
+        "required": false,
+        "default": "Unknown"
+      }
+    ],
+    "default_preprocessing": {
+      "handle_missing": "drop",
+      "scale_features": true,
+      "scaler_type": "StandardScaler",
+      "encode_categorical": true
+    },
+    "default_parameters": {
+      "K-Means": {
+        "n_clusters": 3
+      },
+      "HDBSCAN": {
+        "min_cluster_size": 5,
+        "min_samples": 3
+      }
+    }
+  }
+}
+

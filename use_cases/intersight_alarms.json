@@ -1,0 +1,47 @@
+{
+  "use_case_id": "intersight_alarms",
+  "name": "Intersight Alarms Clustering",
+  "description": "Cluster alarms to identify underlying physical entities or root causes. Many alarms may be related to fewer physical entities than the number of alarms themselves.",
+  "data_format": ["json", "csv"],
+  "recommended_algorithms": ["HDBSCAN", "DBSCAN"],
+  "typical_features": [
+    "alarm_type",
+    "severity",
+    "timestamp",
+    "device_id",
+    "alarm_message",
+    "affected_components",
+    "source",
+    "category"
+  ],
+  "feature_mappings": {
+    "alarm_type": "categorical",
+    "severity": "categorical",
+    "timestamp": "datetime",
+    "device_id": "categorical",
+    "alarm_message": "text",
+    "affected_components": "categorical_array"
+  },
+  "example_data_structure": {
+    "json": [
+      {
+        "alarm_id": "alarm-001",
+        "alarm_type": "Temperature",
+        "severity": "critical",
+        "timestamp": "2024-01-01T00:00:00Z",
+        "device_id": "device-001",
+        "alarm_message": "Temperature threshold exceeded",
+        "affected_components": ["CPU", "Fan"],
+        "source": "sensor-01"
+      }
+    ],
+    "csv": "alarm_id,alarm_type,severity,timestamp,device_id,alarm_message"
+  },
+  "expected_outcome": "Group alarms into clusters representing underlying physical entities or root causes. For example, 100 alarms might cluster into 5-10 physical device groups.",
+  "interpretation_guide": {
+    "cluster_count": "Number of distinct physical entities or root causes identified",
+    "noise_points": "Alarms that don't fit into any clear pattern (may be false alarms or unique issues)",
+    "cluster_size": "Number of alarms per entity/cause (larger clusters may indicate more critical or widespread issues)"
+  }
+}
+
