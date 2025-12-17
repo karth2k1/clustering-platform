@@ -48,8 +48,8 @@ class ClusterAnalysisService:
             cluster_labels = np.array(result.cluster_labels)
             df['cluster'] = cluster_labels
             
-            # Analyze clusters
-            unique_clusters = sorted([c for c in set(cluster_labels) if c != -1])
+            # Analyze clusters - convert numpy types to Python native types
+            unique_clusters = sorted([int(c) for c in set(cluster_labels) if c != -1])
             noise_count = int(np.sum(cluster_labels == -1))
             
             cluster_insights = []
@@ -69,9 +69,9 @@ class ClusterAnalysisService:
             return {
                 "cluster_insights": cluster_insights,
                 "executive_summary": executive_summary,
-                "total_clusters": len(unique_clusters),
-                "noise_points": noise_count,
-                "total_points": len(df)
+                "total_clusters": int(len(unique_clusters)),
+                "noise_points": int(noise_count),
+                "total_points": int(len(df))
             }
             
         except Exception as e:
@@ -102,10 +102,12 @@ class ClusterAnalysisService:
                 if len(value_counts) > 0:
                     top_val = value_counts.index[0]
                     count = value_counts.values[0]
+                    # Convert numpy types to Python native types
+                    count_int = int(count) if hasattr(count, 'item') else int(count)
                     top_values[col] = {
                         "value": str(top_val),
-                        "count": int(count),
-                        "percentage": float((count / cluster_size) * 100)
+                        "count": count_int,
+                        "percentage": float((count_int / cluster_size) * 100)
                     }
         
         # Generate cluster description
@@ -114,9 +116,9 @@ class ClusterAnalysisService:
         )
         
         return {
-            "cluster_id": cluster_id,
-            "size": cluster_size,
-            "percentage": round(percentage, 1),
+            "cluster_id": int(cluster_id),
+            "size": int(cluster_size),
+            "percentage": float(round(percentage, 1)),
             "characteristics": top_values,
             "description": description,
             "key_attributes": ClusterAnalysisService._extract_key_attributes(top_values)
@@ -198,29 +200,30 @@ class ClusterAnalysisService:
             insights.append({
                 "type": "primary",
                 "title": "Largest Issue Group",
-                "description": f"{largest_cluster['size']} alarms ({largest_cluster['percentage']}%) share similar characteristics: {largest_cluster['description']}"
+                "description": f"{int(largest_cluster['size'])} alarms ({float(largest_cluster['percentage'])}%) share similar characteristics: {largest_cluster['description']}"
             })
         
         if severity_counts:
-            critical_count = severity_counts.get('Critical', 0)
+            critical_count = int(severity_counts.get('Critical', 0))
             if critical_count > 0:
+                critical_clusters = len([c for c in cluster_insights if c['characteristics'].get('OrigSeverity', {}).get('value') == 'Critical'])
                 insights.append({
                     "type": "critical",
                     "title": "Critical Alarms",
-                    "description": f"{critical_count} critical alarms identified across {len([c for c in cluster_insights if c['characteristics'].get('OrigSeverity', {}).get('value') == 'Critical'])}) clusters"
+                    "description": f"{critical_count} critical alarms identified across {int(critical_clusters)} clusters"
                 })
         
         if noise_count > 0:
-            noise_pct = (noise_count / total_points) * 100
+            noise_pct = float((noise_count / total_points) * 100)
             insights.append({
                 "type": "info",
                 "title": "Unique Cases",
-                "description": f"{noise_count} alarms ({noise_pct:.1f}%) are unique and don't fit into major patterns - may require individual attention"
+                "description": f"{int(noise_count)} alarms ({noise_pct:.1f}%) are unique and don't fit into major patterns - may require individual attention"
             })
         
         return {
             "title": f"Alarm Analysis: {filename}",
-            "overview": f"Analyzed {total_points} alarms and identified {len(cluster_insights)} distinct patterns",
+            "overview": f"Analyzed {int(total_points)} alarms and identified {int(len(cluster_insights))} distinct patterns",
             "insights": insights,
             "recommendations": ClusterAnalysisService._generate_recommendations(cluster_insights, severity_counts)
         }
@@ -234,7 +237,7 @@ class ClusterAnalysisService:
         recommendations = []
         
         # Check for critical issues
-        critical_count = severity_counts.get('Critical', 0)
+        critical_count = int(severity_counts.get('Critical', 0))
         if critical_count > 0:
             recommendations.append(
                 f"Prioritize investigation of {critical_count} critical alarms - these represent the highest risk"
@@ -243,8 +246,9 @@ class ClusterAnalysisService:
         # Check for large clusters
         large_clusters = [c for c in cluster_insights if c['percentage'] > 20]
         if large_clusters:
+            pct = float(large_clusters[0]['percentage'])
             recommendations.append(
-                f"Focus on the largest cluster(s) - addressing root causes here could resolve {large_clusters[0]['percentage']:.1f}% of alarms"
+                f"Focus on the largest cluster(s) - addressing root causes here could resolve {pct:.1f}% of alarms"
             )
         
         # Check for noise
