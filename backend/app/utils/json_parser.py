@@ -12,7 +12,14 @@ def detect_json_structure(json_data: Any) -> str:
             return "array_of_objects"
         return "array"
     elif isinstance(json_data, dict):
-        # Check if it's nested objects
+        # Check for common API response patterns with Results/Data/Items arrays
+        # Intersight API format: {"ObjectType": "...", "Results": [...]}
+        # Common patterns: Results, Data, Items, records, data
+        array_keys = ['Results', 'Data', 'Items', 'records', 'data', 'items']
+        for key in array_keys:
+            if key in json_data and isinstance(json_data[key], list) and len(json_data[key]) > 0:
+                return "nested_results_array"
+        # Check if it's nested objects (single key with list value)
         if len(json_data) == 1 and isinstance(list(json_data.values())[0], list):
             return "nested_objects"
         return "object"
@@ -56,6 +63,22 @@ def parse_json_content(json_content: str) -> Tuple[Optional[pd.DataFrame], Optio
             # Flatten each object
             flattened = [flatten_dict(obj) for obj in json_data]
             df = pd.DataFrame(flattened)
+        elif structure_type == "nested_results_array":
+            # Extract the Results/Data/Items array from API response
+            array_keys = ['Results', 'Data', 'Items', 'records', 'data', 'items']
+            results_array = None
+            for key in array_keys:
+                if key in json_data and isinstance(json_data[key], list):
+                    results_array = json_data[key]
+                    break
+            if results_array and len(results_array) > 0:
+                # Flatten each object in the results array
+                flattened = [flatten_dict(obj) for obj in results_array]
+                df = pd.DataFrame(flattened)
+            else:
+                # Fallback: flatten the entire structure
+                flattened = flatten_dict(json_data)
+                df = pd.DataFrame([flattened])
         elif structure_type == "nested_objects":
             # Handle nested structure
             flattened = flatten_dict(json_data)
@@ -81,20 +104,27 @@ def parse_json_file(file_path: Path) -> Tuple[Optional[pd.DataFrame], Optional[s
         with open(file_path, 'r', encoding='utf-8') as f:
             content = f.read()
         
-        # Try JSON Lines format first
-        if '\n' in content and content.strip().startswith('{'):
-            lines = [line.strip() for line in content.strip().split('\n') if line.strip()]
+        # Try JSON Lines format first (each line is a complete JSON object)
+        # Only detect as JSON Lines if multiple lines start with '{' and can be parsed independently
+        lines = [line.strip() for line in content.strip().split('\n') if line.strip()]
+        if len(lines) > 1 and all(line.startswith('{') for line in lines[:3]):
+            # Try parsing as JSON Lines
             json_objects = []
             for line in lines:
                 try:
-                    json_objects.append(json.loads(line))
-                except:
-                    pass
-            if json_objects:
+                    parsed = json.loads(line)
+                    json_objects.append(parsed)
+                except json.JSONDecodeError:
+                    # Not JSON Lines, fall through to regular JSON parsing
+                    break
+            # Only use JSON Lines if we successfully parsed multiple objects
+            if len(json_objects) > 1:
                 json_data = json_objects
             else:
+                # Fall back to regular JSON parsing
                 json_data = json.loads(content)
         else:
+            # Regular JSON format
             json_data = json.loads(content)
         
         # Detect structure
@@ -103,6 +133,22 @@ def parse_json_file(file_path: Path) -> Tuple[Optional[pd.DataFrame], Optional[s
         if structure_type == "array_of_objects":
             flattened = [flatten_dict(obj) for obj in json_data]
             df = pd.DataFrame(flattened)
+        elif structure_type == "nested_results_array":
+            # Extract the Results/Data/Items array from API response
+            array_keys = ['Results', 'Data', 'Items', 'records', 'data', 'items']
+            results_array = None
+            for key in array_keys:
+                if key in json_data and isinstance(json_data[key], list):
+                    results_array = json_data[key]
+                    break
+            if results_array and len(results_array) > 0:
+                # Flatten each object in the results array
+                flattened = [flatten_dict(obj) for obj in results_array]
+                df = pd.DataFrame(flattened)
+            else:
+                # Fallback: flatten the entire structure
+                flattened = flatten_dict(json_data)
+                df = pd.DataFrame([flattened])
         elif structure_type == "nested_objects":
             flattened = flatten_dict(json_data)
             df = pd.DataFrame([flattened])
