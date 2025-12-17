@@ -75,3 +75,15 @@ def get_noise_points(
         raise HTTPException(status_code=404, detail=details["error"])
     return details
 
+
+@router.get("/analysis/{result_id}/features")
+def get_clustering_features(
+    result_id: str,
+    db: Session = Depends(get_db)
+) -> Dict[str, Any]:
+    """Get information about features used for clustering"""
+    features_info = ClusterAnalysisService.get_clustering_features(db, result_id)
+    if "error" in features_info:
+        raise HTTPException(status_code=404, detail=features_info["error"])
+    return features_info
+

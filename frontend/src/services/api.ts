@@ -178,6 +178,11 @@ export const getNoisePoints = async (resultId: string) => {
   return response.data;
 };
 
+export const getClusteringFeatures = async (resultId: string) => {
+  const response = await apiClient.get(`/api/clustering/analysis/${resultId}/features`);
+  return response.data;
+};
+
 // Notebooks
 export const createNotebook = async (dataFileId: string) => {
   const response = await apiClient.post('/api/notebooks/create', {

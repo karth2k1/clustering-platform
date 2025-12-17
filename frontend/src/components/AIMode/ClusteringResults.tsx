@@ -2,6 +2,7 @@ import { useState } from 'react';
 import { useQuery } from '@tanstack/react-query';
 import { getClusteringResults, getClusterAnalysis } from '../../services/api';
 import ClusterDetailDrawer from './ClusterDetailDrawer';
+import DataScientistControls from './DataScientistControls';
 import '../common/styles.css';
 
 interface ClusteringResultsProps {
@@ -78,6 +79,9 @@ function ClusteringResults({ fileId }: ClusteringResultsProps) {
           onClusterClick={(clusterId, clusterInfo) => 
             setSelectedCluster({ resultId: resultId!, clusterId, clusterInfo })
           }
+          onNoisePointsClick={(clusterInfo) =>
+            setSelectedCluster({ resultId: resultId!, clusterId: -1, clusterInfo })
+          }
         />
       ) : (
         <DataScientistView 
@@ -109,7 +113,8 @@ function ExecutiveView({
   analysisError,
   results,
   onResultSelect,
-  onClusterClick
+  onClusterClick,
+  onNoisePointsClick
 }: any) {
   return (
     <div className="executive-view">
@@ -187,14 +192,10 @@ function ExecutiveView({
               {analysis.noise_points > 0 && (
                 <div 
                   className="cluster-card cluster-noise clickable"
-                  onClick={() => setSelectedCluster({ 
-                    resultId: resultId!, 
-                    clusterId: -1, 
-                    clusterInfo: { 
-                      cluster_id: -1, 
-                      size: analysis.noise_points, 
+                  onClick={() => onNoisePointsClick({
+                    cluster_id: -1, 
+                    size: analysis.noise_points, 
                       description: 'Unique cases that don\'t fit into major patterns' 
-                    } 
                   })}
                 >
                   <div className="cluster-header">
@@ -270,6 +271,9 @@ function DataScientistView({
           </select>
         </div>
       )}
+
+      {/* Data Scientist Controls */}
+      <DataScientistControls resultId={result.id} />
 
       <div className="result-card">
         <div className="result-header">

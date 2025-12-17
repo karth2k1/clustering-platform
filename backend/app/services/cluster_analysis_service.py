@@ -491,6 +491,78 @@ class ClusterAnalysisService:
             return {"error": f"Error getting noise points: {str(e)}"}
     
     @staticmethod
+    def get_clustering_features(
+        db: Session,
+        result_id: str
+    ) -> Dict[str, Any]:
+        """
+        Get information about features used for clustering
+        
+        Returns:
+            Dictionary with feature information
+        """
+        try:
+            # Get clustering result
+            result = db.query(ClusteringResult).filter(ClusteringResult.id == result_id).first()
+            if not result:
+                return {"error": "Clustering result not found"}
+            
+            # Get data file
+            data_file = FileService.get_file(db, result.data_file_id)
+            if not data_file:
+                return {"error": "Data file not found"}
+            
+            # Load original data
+            file_path = FileService.get_file_path_for_download(data_file)
+            if data_file.file_type == FileType.JSON:
+                df, error = parse_json_file(file_path)
+            else:
+                df, error = pd.read_csv(file_path), None
+            
+            if error or df is None or df.empty:
+                return {"error": f"Error loading data: {error}"}
+            
+            # Re-run preprocessing to get feature names
+            from app.utils.clustering_utils import preprocess_data
+            processed_data, feature_names = preprocess_data(df)
+            
+            if processed_data is None or len(feature_names) == 0:
+                return {"error": "Could not determine features"}
+            
+            # Analyze feature types
+            feature_info = []
+            for feat_name in feature_names:
+                if feat_name in df.columns:
+                    col_data = df[feat_name]
+                    feature_info.append({
+                        "name": feat_name,
+                        "type": str(col_data.dtype),
+                        "unique_values": int(col_data.nunique()),
+                        "missing_count": int(col_data.isna().sum()),
+                        "is_categorical": col_data.dtype == 'object' or col_data.dtype.name == 'category'
+                    })
+            
+            return {
+                "total_features": len(feature_names),
+                "feature_names": feature_names,
+                "feature_details": feature_info,
+                "data_shape": {
+                    "rows": int(len(df)),
+                    "columns": int(len(df.columns)),
+                    "processed_rows": int(len(processed_data)) if processed_data is not None else 0,
+                    "processed_features": int(len(feature_names))
+                },
+                "preprocessing_info": {
+                    "algorithm": result.algorithm,
+                    "scaling": "StandardScaler (mean=0, std=1)",
+                    "encoding": "LabelEncoder for categorical features" if any(f['is_categorical'] for f in feature_info) else "None (numeric features only)"
+                }
+            }
+            
+        except Exception as e:
+            return {"error": f"Error getting clustering features: {str(e)}"}
+    
+    @staticmethod
     def _generate_cluster_importance(insight: Dict[str, Any], total_alarms: int) -> Dict[str, Any]:
         """Generate explanation of why this cluster is important"""
         importance_reasons = []
