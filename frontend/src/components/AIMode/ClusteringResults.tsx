@@ -20,7 +20,7 @@ function ClusteringResults({ fileId }: ClusteringResultsProps) {
 
   // Get analysis for the first result (or selected result)
   const resultId = selectedResultId || results?.[0]?.id;
-  const { data: analysis, isLoading: analysisLoading } = useQuery({
+  const { data: analysis, isLoading: analysisLoading, error: analysisError } = useQuery({
     queryKey: ['cluster-analysis', resultId],
     queryFn: () => getClusterAnalysis(resultId!),
     enabled: !!resultId && viewMode === 'executive',
@@ -113,6 +113,12 @@ function ExecutiveView({
 
       {analysisLoading ? (
         <div className="loading">Analyzing clusters...</div>
+      ) : analysisError ? (
+        <div className="error">
+          Error loading analysis: {analysisError instanceof Error ? analysisError.message : 'Unknown error'}
+          <br />
+          <small>Please check the browser console for details.</small>
+        </div>
       ) : analysis?.executive_summary ? (
         <div className="executive-summary">
           <div className="summary-header">

@@ -3,7 +3,7 @@ import pandas as pd
 import numpy as np
 from sqlalchemy.orm import Session
 from typing import Dict, Any, List, Optional
-from app.models import DataFile, ClusteringResult
+from app.models import DataFile, ClusteringResult, FileType
 from app.services.file_service import FileService
 from app.utils.json_parser import parse_json_file
 from collections import Counter
@@ -36,7 +36,7 @@ class ClusterAnalysisService:
             
             # Load original data
             file_path = FileService.get_file_path_for_download(data_file)
-            if data_file.file_type.value == "JSON":
+            if data_file.file_type == FileType.JSON:
                 df, error = parse_json_file(file_path)
             else:
                 df, error = pd.read_csv(file_path), None
