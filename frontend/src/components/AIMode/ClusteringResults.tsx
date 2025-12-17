@@ -70,6 +70,7 @@ function ClusteringResults({ fileId }: ClusteringResultsProps) {
           result={currentResult} 
           analysis={analysis} 
           analysisLoading={analysisLoading}
+          analysisError={analysisError}
           results={results}
           onResultSelect={setSelectedResultId}
         />
@@ -89,6 +90,7 @@ function ExecutiveView({
   result, 
   analysis, 
   analysisLoading,
+  analysisError,
   results,
   onResultSelect 
 }: any) {
