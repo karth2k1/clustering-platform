@@ -73,7 +73,7 @@ class DataFile(Base):
     upload_method = Column(SQLEnum(UploadMethod), nullable=False)
     upload_timestamp = Column(DateTime, default=datetime.utcnow)
     processing_status = Column(SQLEnum(ProcessingStatus), default=ProcessingStatus.PENDING)
-    metadata = Column(JSON, nullable=True)  # File metadata (columns, shape, etc.)
+    file_metadata = Column(JSON, nullable=True)  # File metadata (columns, shape, etc.)
     error_message = Column(Text, nullable=True)  # Error message if processing failed
     created_at = Column(DateTime, default=datetime.utcnow)
     updated_at = Column(DateTime, default=datetime.utcnow, onupdate=datetime.utcnow)

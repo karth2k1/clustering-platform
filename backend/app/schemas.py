@@ -78,7 +78,7 @@ class DataFileResponse(BaseModel):
     upload_method: UploadMethodEnum
     upload_timestamp: datetime
     processing_status: ProcessingStatusEnum
-    metadata: Optional[Dict[str, Any]] = None
+    file_metadata: Optional[Dict[str, Any]] = None
     error_message: Optional[str] = None
     created_at: datetime
     updated_at: datetime

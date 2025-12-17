@@ -1,9 +1,10 @@
 """Main FastAPI application"""
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
+from fastapi.staticfiles import StaticFiles
 from app.database import init_db
 from app.api import files, devices, clustering, notebooks
-from app.config import settings
+from app.config import settings, VISUALIZATIONS_DIR
 
 # Initialize database
 init_db()
@@ -23,6 +24,9 @@ app.add_middleware(
     allow_methods=["*"],
     allow_headers=["*"],
 )
+
+# Mount static files for visualizations
+app.mount("/visualizations", StaticFiles(directory=str(VISUALIZATIONS_DIR)), name="visualizations")
 
 # Include routers
 app.include_router(files.router)

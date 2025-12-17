@@ -4,7 +4,7 @@ from pathlib import Path
 from typing import Tuple, Optional
 import uuid
 from datetime import datetime
-from app.config import settings
+from app.config import settings, UPLOAD_DIR
 
 
 def generate_unique_filename(original_filename: str) -> str:
@@ -27,11 +27,11 @@ def save_uploaded_file(file_content: bytes, original_filename: str, device_id: O
     
     # Create device-specific subdirectory if device_id provided
     if device_id:
-        device_dir = settings.UPLOAD_DIR / device_id
+        device_dir = UPLOAD_DIR / device_id
         device_dir.mkdir(parents=True, exist_ok=True)
         file_path = device_dir / stored_filename
     else:
-        file_path = settings.UPLOAD_DIR / stored_filename
+        file_path = UPLOAD_DIR / stored_filename
     
     # Save file
     with open(file_path, 'wb') as f:
@@ -43,8 +43,8 @@ def save_uploaded_file(file_content: bytes, original_filename: str, device_id: O
 def get_file_path(filename: str, device_id: Optional[str] = None) -> Path:
     """Get full path to stored file"""
     if device_id:
-        return settings.UPLOAD_DIR / device_id / filename
-    return settings.UPLOAD_DIR / filename
+        return UPLOAD_DIR / device_id / filename
+    return UPLOAD_DIR / filename
 
 
 def delete_file(filename: str, device_id: Optional[str] = None) -> bool:
@@ -62,7 +62,7 @@ def delete_file(filename: str, device_id: Optional[str] = None) -> bool:
 def delete_device_files(device_id: str) -> int:
     """Delete all files associated with a device"""
     try:
-        device_dir = settings.UPLOAD_DIR / device_id
+        device_dir = UPLOAD_DIR / device_id
         if device_dir.exists():
             file_count = len(list(device_dir.iterdir()))
             shutil.rmtree(device_dir)
@@ -75,17 +75,17 @@ def delete_device_files(device_id: str) -> int:
 def move_device_files_to_general(device_id: str) -> int:
     """Move device files to general upload directory"""
     try:
-        device_dir = settings.UPLOAD_DIR / device_id
+        device_dir = UPLOAD_DIR / device_id
         if not device_dir.exists():
             return 0
         
         file_count = 0
         for file_path in device_dir.iterdir():
             if file_path.is_file():
-                new_path = settings.UPLOAD_DIR / file_path.name
+                new_path = UPLOAD_DIR / file_path.name
                 # Handle name conflicts
                 if new_path.exists():
-                    new_path = settings.UPLOAD_DIR / generate_unique_filename(file_path.name)
+                    new_path = UPLOAD_DIR / generate_unique_filename(file_path.name)
                 shutil.move(str(file_path), str(new_path))
                 file_count += 1
         

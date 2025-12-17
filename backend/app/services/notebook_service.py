@@ -5,7 +5,7 @@ from sqlalchemy.orm import Session
 from typing import Tuple, Optional
 from app.models import NotebookSession, NotebookStatus, DataFile
 from app.services.file_service import FileService
-from app.config import settings
+from app.config import settings, NOTEBOOK_DIR
 from datetime import datetime
 
 
@@ -35,7 +35,7 @@ class NotebookService:
             # Create notebook session
             session = NotebookSession(
                 data_file_id=data_file_id,
-                notebook_path=str(notebook_path.relative_to(settings.NOTEBOOK_DIR)),
+                notebook_path=str(notebook_path.relative_to(NOTEBOOK_DIR)),
                 status=NotebookStatus.CREATED
             )
             
@@ -177,7 +177,7 @@ if valid_mask.sum() > 1 and len(set(cluster_labels[valid_mask])) > 1:
         # Save notebook
         timestamp = datetime.now().strftime("%Y%m%d_%H%M%S")
         notebook_filename = f"clustering_{data_file.id[:8]}_{timestamp}.ipynb"
-        notebook_path = settings.NOTEBOOK_DIR / notebook_filename
+        notebook_path = NOTEBOOK_DIR / notebook_filename
         
         with open(notebook_path, 'w') as f:
             nbf.write(nb, f)

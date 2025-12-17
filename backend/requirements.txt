@@ -17,6 +17,7 @@ seaborn==0.13.0
 plotly==5.18.0
 scipy==1.11.4
 requests==2.31.0
+urllib3<2.0  # Pin to v1.x for LibreSSL compatibility on macOS
 python-dotenv==1.0.0
 cryptography==41.0.7
 nbformat==5.9.2

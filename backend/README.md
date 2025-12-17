@@ -2,81 +2,94 @@
 
 FastAPI backend for the Clustering Platform web application.
 
-## Features
-
-- File upload and management (CSV/JSON)
-- Device management with WebAPI integration
-- Automatic clustering with algorithm selection
-- Notebook generation for Advanced mode
-- RESTful API endpoints
-
 ## Setup
 
-1. Install dependencies:
+### Option 1: Using Setup Script (Recommended)
+
 ```bash
-pip install -r requirements.txt
+cd backend
+bash setup.sh
 ```
 
-2. Configure environment (optional):
-Create a `.env` file:
-```
-DATABASE_URL=sqlite:///./clustering_platform.db
-UPLOAD_DIR=uploads
-NOTEBOOK_DIR=notebooks
-JUPYTER_SERVER_URL=http://localhost:8888
-SECRET_KEY=your-secret-key
-ENCRYPTION_KEY=your-encryption-key
+This will:
+- Activate/create virtual environment
+- Install all dependencies
+- Initialize the database
+
+### Option 2: Manual Setup
+
+1. **Activate Virtual Environment**
+   ```bash
+   cd /Users/kkarupas/cursor/projects/clustering-platform
+   source venv/bin/activate
+   ```
+
+2. **Install Dependencies**
+   ```bash
+   cd backend
+   pip install -r requirements.txt
+   ```
+
+3. **Initialize Database**
+   ```bash
+   python -c "from app.database import init_db; init_db()"
+   ```
+
+## Running the Server
+
+### Option 1: Using Run Script
+```bash
+cd backend
+bash run.sh
 ```
 
-3. Initialize database:
+### Option 2: Manual Run
 ```bash
-python -c "from app.database import init_db; init_db()"
+# Activate virtual environment first
+source ../venv/bin/activate
+
+# Run the server
+python run.py
 ```
 
-4. Run the server:
+### Option 3: Using Uvicorn Directly
 ```bash
+source ../venv/bin/activate
 uvicorn app.main:app --reload --host 0.0.0.0 --port 8000
 ```
 
 ## API Documentation
 
 Once running, visit:
-- Swagger UI: http://localhost:8000/docs
-- ReDoc: http://localhost:8000/redoc
+- **Swagger UI**: http://localhost:8000/docs
+- **ReDoc**: http://localhost:8000/redoc
 
-## API Endpoints
+## Troubleshooting
 
-### Files
-- `POST /api/files/upload` - Upload single file
-- `POST /api/files/upload-multiple` - Upload multiple files
-- `GET /api/files` - List files (with filters)
-- `GET /api/files/{file_id}` - Get file details
-- `DELETE /api/files/{file_id}` - Delete file
-- `GET /api/files/{file_id}/download` - Download file
+### Import Errors
+If you get import errors, make sure:
+1. Virtual environment is activated
+2. You're in the `backend` directory
+3. All dependencies are installed: `pip install -r requirements.txt`
 
-### Devices
-- `POST /api/devices` - Create device
-- `GET /api/devices` - List devices
-- `GET /api/devices/{device_id}` - Get device details
-- `PUT /api/devices/{device_id}` - Update device
-- `DELETE /api/devices/{device_id}` - Delete device
-- `POST /api/devices/{device_id}/sync` - Sync data from device
+### Database Errors
+If database errors occur:
+1. Delete `clustering_platform.db` if it exists
+2. Reinitialize: `python -c "from app.database import init_db; init_db()"`
 
-### Clustering
-- `POST /api/clustering/auto` - Run automatic clustering
-- `GET /api/clustering/results/{file_id}` - Get clustering results
-- `GET /api/clustering/results/{file_id}/{result_id}` - Get specific result
-
-### Notebooks
-- `POST /api/notebooks/create` - Create notebook from data file
-- `GET /api/notebooks/{session_id}` - Get notebook session
+### Port Already in Use
+If port 8000 is already in use:
+```bash
+# Change port in run.py or use:
+uvicorn app.main:app --reload --port 8001
+```
 
 ## Project Structure
 
 ```
 backend/
 ├── app/
-│   ├── api/              # API endpoints
+│   ├── api/              # REST API endpoints
 │   ├── services/         # Business logic
 │   ├── utils/            # Utilities
 │   ├── models.py         # Database models
@@ -86,6 +99,8 @@ backend/
 │   └── main.py           # FastAPI app
 ├── uploads/              # Uploaded files
 ├── notebooks/            # Generated notebooks
-└── requirements.txt      # Dependencies
+├── requirements.txt      # Dependencies
+├── setup.sh              # Setup script
+├── run.sh                # Run script
+└── run.py                # Python run script
 ```
-

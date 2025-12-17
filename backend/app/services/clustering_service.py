@@ -13,6 +13,7 @@ from app.utils.clustering_utils import (
     execute_clustering,
     calculate_metrics
 )
+from app.utils.visualization import create_clustering_visualization
 from app.config import settings
 
 
@@ -72,7 +73,7 @@ class ClusteringService:
             
             # Select algorithm if not specified
             if not algorithm:
-                algorithm = select_algorithm(processed_data, data_file.metadata)
+                algorithm = select_algorithm(processed_data, data_file.file_metadata)
             
             # Execute clustering
             cluster_labels, model, parameters = execute_clustering(
@@ -97,22 +98,40 @@ class ClusteringService:
                         np.array(cluster_labels)[valid_mask]
                     )
             
-            # Save visualization (optional, can be done async)
-            visualization_path = None  # TODO: Generate and save visualization
-            
-            # Create clustering result
+            # Create clustering result first to get ID
             result = ClusteringResult(
                 data_file_id=data_file_id,
                 algorithm=algorithm,
                 parameters=parameters,
                 cluster_labels=cluster_labels.tolist() if isinstance(cluster_labels, np.ndarray) else cluster_labels,
                 metrics=metrics,
-                visualization_path=visualization_path
+                visualization_path=None
             )
             
             db.add(result)
             db.commit()
             db.refresh(result)
+            
+            # Generate and save visualization now that we have result ID
+            visualization_path = None
+            try:
+                vis_filename = f"clustering_{result.id}.html"
+                vis_path = settings.VISUALIZATIONS_DIR / vis_filename
+                
+                if create_clustering_visualization(
+                    processed_data,
+                    cluster_labels,
+                    feature_names,
+                    algorithm,
+                    vis_path
+                ):
+                    # Store relative path
+                    visualization_path = f"visualizations/{vis_filename}"
+                    result.visualization_path = visualization_path
+                    db.commit()
+            except Exception as e:
+                # Don't fail clustering if visualization fails
+                print(f"Warning: Failed to create visualization: {str(e)}")
             
             return result, None
             

@@ -6,7 +6,7 @@ from typing import Optional, Tuple
 from app.models import DataFile, FileType, UploadMethod, ProcessingStatus
 from app.utils.file_storage import save_uploaded_file, get_file_path, get_file_size
 from app.utils.json_parser import parse_json_file, parse_json_content, extract_file_metadata
-from app.config import settings
+from app.config import settings, UPLOAD_DIR
 
 
 class FileService:
@@ -53,7 +53,7 @@ class FileService:
             data_file = DataFile(
                 filename=stored_filename,
                 original_filename=original_filename,
-                file_path=str(file_path.relative_to(settings.UPLOAD_DIR)),
+                file_path=str(file_path.relative_to(UPLOAD_DIR)),
                 file_type=file_type,
                 file_size=file_size,
                 device_id=device_id,
@@ -79,7 +79,7 @@ class FileService:
                 
                 # Extract metadata
                 metadata = extract_file_metadata(df)
-                data_file.metadata = metadata
+                data_file.file_metadata = metadata
                 data_file.processing_status = ProcessingStatus.COMPLETED
                 
             except Exception as e:
