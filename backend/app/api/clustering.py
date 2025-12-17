@@ -1,10 +1,11 @@
 """Clustering API endpoints"""
 from fastapi import APIRouter, Depends, HTTPException
 from sqlalchemy.orm import Session
-from typing import List
+from typing import List, Dict, Any
 from app.database import get_db
 from app.schemas import ClusteringRequest, ClusteringResultResponse
 from app.services.clustering_service import ClusteringService
+from app.services.cluster_analysis_service import ClusterAnalysisService
 
 router = APIRouter(prefix="/api/clustering", tags=["clustering"])
 
@@ -39,4 +40,13 @@ def get_clustering_result(file_id: str, result_id: str, db: Session = Depends(ge
     if not result or result.data_file_id != file_id:
         raise HTTPException(status_code=404, detail="Clustering result not found")
     return ClusteringResultResponse.model_validate(result)
+
+
+@router.get("/analysis/{result_id}")
+def get_cluster_analysis(result_id: str, db: Session = Depends(get_db)) -> Dict[str, Any]:
+    """Get cluster analysis and insights for a clustering result"""
+    analysis = ClusterAnalysisService.analyze_clusters(db, result_id)
+    if "error" in analysis:
+        raise HTTPException(status_code=404, detail=analysis["error"])
+    return analysis
 

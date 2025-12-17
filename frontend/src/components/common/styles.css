@@ -440,3 +440,282 @@
   color: #7f8c8d;
   font-size: 0.9rem;
 }
+
+/* Executive/Data Scientist View Styles */
+.results-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 2rem;
+  padding-bottom: 1rem;
+  border-bottom: 2px solid #ecf0f1;
+}
+
+.view-toggle {
+  display: flex;
+  gap: 0.5rem;
+}
+
+.toggle-btn {
+  padding: 0.5rem 1.5rem;
+  border: 2px solid #3498db;
+  background: white;
+  color: #3498db;
+  border-radius: 6px;
+  cursor: pointer;
+  font-size: 0.9rem;
+  font-weight: 600;
+  transition: all 0.2s;
+}
+
+.toggle-btn:hover {
+  background: #e8f4f8;
+}
+
+.toggle-btn.active {
+  background: #3498db;
+  color: white;
+}
+
+.result-selector {
+  margin-bottom: 1.5rem;
+  display: flex;
+  align-items: center;
+  gap: 1rem;
+}
+
+.result-selector label {
+  font-weight: 600;
+  color: #2c3e50;
+}
+
+.result-select {
+  padding: 0.5rem 1rem;
+  border: 1px solid #ddd;
+  border-radius: 4px;
+  font-size: 0.9rem;
+  min-width: 300px;
+}
+
+/* Executive View Styles */
+.executive-view {
+  background: #f8f9fa;
+  padding: 2rem;
+  border-radius: 8px;
+}
+
+.executive-summary {
+  background: white;
+  padding: 2rem;
+  border-radius: 8px;
+  box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+}
+
+.summary-header {
+  margin-bottom: 2rem;
+  padding-bottom: 1rem;
+  border-bottom: 2px solid #ecf0f1;
+}
+
+.summary-header h2 {
+  margin: 0 0 0.5rem 0;
+  color: #2c3e50;
+  font-size: 1.8rem;
+}
+
+.summary-overview {
+  margin: 0;
+  color: #7f8c8d;
+  font-size: 1.1rem;
+}
+
+.insights-section {
+  margin-bottom: 2rem;
+}
+
+.insights-section h3 {
+  color: #2c3e50;
+  margin-bottom: 1rem;
+  font-size: 1.3rem;
+}
+
+.insights-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+  gap: 1rem;
+}
+
+.insight-card {
+  display: flex;
+  gap: 1rem;
+  padding: 1.5rem;
+  border-radius: 8px;
+  border-left: 4px solid;
+}
+
+.insight-primary {
+  background: #e8f4f8;
+  border-color: #3498db;
+}
+
+.insight-critical {
+  background: #ffe8e8;
+  border-color: #e74c3c;
+}
+
+.insight-info {
+  background: #f0f8ff;
+  border-color: #95a5a6;
+}
+
+.insight-icon {
+  font-size: 2rem;
+  flex-shrink: 0;
+}
+
+.insight-content h4 {
+  margin: 0 0 0.5rem 0;
+  color: #2c3e50;
+  font-size: 1.1rem;
+}
+
+.insight-content p {
+  margin: 0;
+  color: #7f8c8d;
+  line-height: 1.6;
+}
+
+.clusters-section {
+  margin-bottom: 2rem;
+}
+
+.clusters-section h3 {
+  color: #2c3e50;
+  margin-bottom: 1rem;
+  font-size: 1.3rem;
+}
+
+.clusters-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
+  gap: 1rem;
+}
+
+.cluster-card {
+  background: white;
+  border: 2px solid #ecf0f1;
+  border-radius: 8px;
+  padding: 1.5rem;
+  transition: all 0.2s;
+}
+
+.cluster-card:hover {
+  border-color: #3498db;
+  box-shadow: 0 4px 8px rgba(52, 152, 219, 0.2);
+}
+
+.cluster-card.cluster-noise {
+  border-color: #95a5a6;
+  background: #f8f9fa;
+}
+
+.cluster-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 0.75rem;
+  padding-bottom: 0.75rem;
+  border-bottom: 1px solid #ecf0f1;
+}
+
+.cluster-header h4 {
+  margin: 0;
+  color: #2c3e50;
+  font-size: 1.1rem;
+}
+
+.cluster-size {
+  background: #3498db;
+  color: white;
+  padding: 0.25rem 0.75rem;
+  border-radius: 12px;
+  font-size: 0.85rem;
+  font-weight: 600;
+}
+
+.cluster-card.cluster-noise .cluster-size {
+  background: #95a5a6;
+}
+
+.cluster-description {
+  margin: 0 0 1rem 0;
+  color: #7f8c8d;
+  line-height: 1.6;
+  font-size: 0.95rem;
+}
+
+.cluster-attributes {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.5rem;
+}
+
+.attribute-tag {
+  background: #e8f4f8;
+  color: #2c3e50;
+  padding: 0.25rem 0.75rem;
+  border-radius: 4px;
+  font-size: 0.85rem;
+  font-weight: 500;
+}
+
+.recommendations-section {
+  margin-bottom: 2rem;
+  background: #fff9e6;
+  padding: 1.5rem;
+  border-radius: 8px;
+  border-left: 4px solid #f39c12;
+}
+
+.recommendations-section h3 {
+  color: #2c3e50;
+  margin: 0 0 1rem 0;
+  font-size: 1.3rem;
+}
+
+.recommendations-list {
+  margin: 0;
+  padding-left: 1.5rem;
+}
+
+.recommendations-list li {
+  margin-bottom: 0.75rem;
+  color: #7f8c8d;
+  line-height: 1.6;
+}
+
+.visualization-preview {
+  margin-top: 2rem;
+}
+
+.visualization-preview h3 {
+  color: #2c3e50;
+  margin-bottom: 1rem;
+  font-size: 1.3rem;
+}
+
+.visualization-hint {
+  color: #7f8c8d;
+  font-size: 0.9rem;
+  font-style: italic;
+  margin-bottom: 0.5rem;
+}
+
+/* Data Scientist View Styles */
+.scientist-view {
+  background: white;
+}
+
+.scientist-view .result-card {
+  background: #f8f9fa;
+}
