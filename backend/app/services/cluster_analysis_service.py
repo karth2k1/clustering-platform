@@ -263,4 +263,171 @@ class ClusterAnalysisService:
             )
         
         return recommendations
+    
+    @staticmethod
+    def get_cluster_details(
+        db: Session,
+        result_id: str,
+        cluster_id: int
+    ) -> Dict[str, Any]:
+        """
+        Get detailed information about a specific cluster including all alarms
+        
+        Returns:
+            Dictionary with cluster details and alarm data
+        """
+        try:
+            # Get clustering result
+            result = db.query(ClusteringResult).filter(ClusteringResult.id == result_id).first()
+            if not result:
+                return {"error": "Clustering result not found"}
+            
+            # Get data file
+            data_file = FileService.get_file(db, result.data_file_id)
+            if not data_file:
+                return {"error": "Data file not found"}
+            
+            # Load original data
+            file_path = FileService.get_file_path_for_download(data_file)
+            if data_file.file_type == FileType.JSON:
+                df, error = parse_json_file(file_path)
+            else:
+                df, error = pd.read_csv(file_path), None
+            
+            if error or df is None or df.empty:
+                return {"error": f"Error loading data: {error}"}
+            
+            # Add cluster labels
+            cluster_labels = np.array(result.cluster_labels)
+            df['cluster'] = cluster_labels
+            
+            # Filter alarms for this cluster
+            cluster_data = df[df['cluster'] == cluster_id].copy()
+            
+            if len(cluster_data) == 0:
+                return {"error": f"Cluster {cluster_id} not found"}
+            
+            # Get cluster insight
+            insight = ClusterAnalysisService._analyze_single_cluster(
+                cluster_id, cluster_data, len(df)
+            )
+            
+            # Extract alarm details
+            alarms = []
+            for idx, row in cluster_data.iterrows():
+                alarm = {
+                    "index": int(idx),
+                    "code": str(row.get('Code', 'N/A')),
+                    "name": str(row.get('Name', 'N/A')),
+                    "severity": str(row.get('OrigSeverity', 'N/A')),
+                    "description": str(row.get('Description', 'N/A')),
+                    "affected_mo_type": str(row.get('AffectedMoType', 'N/A')),
+                    "affected_mo_display_name": str(row.get('AffectedMoDisplayName', 'N/A')),
+                    "affected_mo_id": str(row.get('AffectedMoId', 'N/A')),
+                    "acknowledge": str(row.get('Acknowledge', 'N/A')),
+                    "create_time": str(row.get('CreateTime', 'N/A')),
+                    "last_transition_time": str(row.get('LastTransitionTime', 'N/A')),
+                }
+                
+                # Add nested object information if available
+                if pd.notna(row.get('AffectedMo')):
+                    affected_mo = row.get('AffectedMo')
+                    if isinstance(affected_mo, dict):
+                        alarm["affected_mo_details"] = {
+                            "moid": str(affected_mo.get('Moid', 'N/A')),
+                            "object_type": str(affected_mo.get('ObjectType', 'N/A')),
+                            "link": str(affected_mo.get('link', 'N/A'))
+                        }
+                
+                # Add all other fields as additional info
+                additional_info = {}
+                for col in cluster_data.columns:
+                    if col not in ['cluster'] and col not in alarm:
+                        val = row.get(col)
+                        if pd.notna(val):
+                            # Convert to string, handle complex types
+                            if isinstance(val, (dict, list)):
+                                additional_info[col] = str(val)
+                            else:
+                                additional_info[col] = str(val)
+                
+                alarm["additional_info"] = additional_info
+                alarms.append(alarm)
+            
+            # Generate importance explanation
+            importance = ClusterAnalysisService._generate_cluster_importance(insight, len(df))
+            
+            return {
+                "cluster_id": int(cluster_id),
+                "insight": insight,
+                "importance": importance,
+                "alarm_count": int(len(alarms)),
+                "alarms": alarms
+            }
+            
+        except Exception as e:
+            return {"error": f"Error getting cluster details: {str(e)}"}
+    
+    @staticmethod
+    def _generate_cluster_importance(insight: Dict[str, Any], total_alarms: int) -> Dict[str, Any]:
+        """Generate explanation of why this cluster is important"""
+        importance_reasons = []
+        priority = "medium"
+        
+        # Check size
+        if insight['percentage'] > 30:
+            importance_reasons.append({
+                "type": "size",
+                "title": "Large Cluster",
+                "description": f"This cluster represents {insight['percentage']}% of all alarms, making it a high-priority issue."
+            })
+            priority = "high"
+        elif insight['percentage'] > 10:
+            importance_reasons.append({
+                "type": "size",
+                "title": "Significant Cluster",
+                "description": f"This cluster represents {insight['percentage']}% of alarms, indicating a recurring pattern."
+            })
+        
+        # Check severity
+        if 'OrigSeverity' in insight.get('characteristics', {}):
+            severity = insight['characteristics']['OrigSeverity']['value']
+            if severity == 'Critical':
+                importance_reasons.append({
+                    "type": "severity",
+                    "title": "Critical Severity",
+                    "description": "All alarms in this cluster are marked as Critical, requiring immediate attention."
+                })
+                priority = "high"
+            elif severity == 'Warning':
+                importance_reasons.append({
+                    "type": "severity",
+                    "title": "Warning Severity",
+                    "description": "These alarms indicate potential issues that should be monitored."
+                })
+        
+        # Check if it's a specific alarm code pattern
+        if 'Code' in insight.get('characteristics', {}):
+            code = insight['characteristics']['Code']['value']
+            code_pct = insight['characteristics']['Code']['percentage']
+            if code_pct > 80:
+                importance_reasons.append({
+                    "type": "pattern",
+                    "title": "Consistent Alarm Pattern",
+                    "description": f"{code_pct:.0f}% of alarms share the same code ({code}), suggesting a systemic issue."
+                })
+        
+        # Default if no specific reasons
+        if not importance_reasons:
+            importance_reasons.append({
+                "type": "general",
+                "title": "Pattern Identified",
+                "description": "This cluster represents a distinct pattern of alarms that may share common root causes."
+            })
+        
+        return {
+            "priority": priority,
+            "reasons": importance_reasons,
+            "summary": f"This cluster contains {insight['size']} alarms ({insight['percentage']}% of total) with similar characteristics."
+        }
 

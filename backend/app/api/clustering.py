@@ -50,3 +50,16 @@ def get_cluster_analysis(result_id: str, db: Session = Depends(get_db)) -> Dict[
         raise HTTPException(status_code=404, detail=analysis["error"])
     return analysis
 
+
+@router.get("/analysis/{result_id}/cluster/{cluster_id}")
+def get_cluster_details(
+    result_id: str, 
+    cluster_id: int, 
+    db: Session = Depends(get_db)
+) -> Dict[str, Any]:
+    """Get detailed information about a specific cluster including all alarms"""
+    details = ClusterAnalysisService.get_cluster_details(db, result_id, cluster_id)
+    if "error" in details:
+        raise HTTPException(status_code=404, detail=details["error"])
+    return details
+

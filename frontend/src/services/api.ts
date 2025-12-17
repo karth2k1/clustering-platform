@@ -168,6 +168,11 @@ export const getClusterAnalysis = async (resultId: string) => {
   return response.data;
 };
 
+export const getClusterDetails = async (resultId: string, clusterId: number) => {
+  const response = await apiClient.get(`/api/clustering/analysis/${resultId}/cluster/${clusterId}`);
+  return response.data;
+};
+
 // Notebooks
 export const createNotebook = async (dataFileId: string) => {
   const response = await apiClient.post('/api/notebooks/create', {

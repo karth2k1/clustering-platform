@@ -1,6 +1,7 @@
 import { useState } from 'react';
 import { useQuery } from '@tanstack/react-query';
 import { getClusteringResults, getClusterAnalysis } from '../../services/api';
+import ClusterDetailDrawer from './ClusterDetailDrawer';
 import '../common/styles.css';
 
 interface ClusteringResultsProps {
@@ -12,6 +13,7 @@ type ViewMode = 'executive' | 'scientist';
 function ClusteringResults({ fileId }: ClusteringResultsProps) {
   const [viewMode, setViewMode] = useState<ViewMode>('executive');
   const [selectedResultId, setSelectedResultId] = useState<string | null>(null);
+  const [selectedCluster, setSelectedCluster] = useState<{resultId: string, clusterId: number, clusterInfo: any} | null>(null);
 
   const { data: results, isLoading } = useQuery({
     queryKey: ['clustering-results', fileId],
@@ -73,6 +75,9 @@ function ClusteringResults({ fileId }: ClusteringResultsProps) {
           analysisError={analysisError}
           results={results}
           onResultSelect={setSelectedResultId}
+          onClusterClick={(clusterId, clusterInfo) => 
+            setSelectedCluster({ resultId: resultId!, clusterId, clusterInfo })
+          }
         />
       ) : (
         <DataScientistView 
@@ -80,6 +85,17 @@ function ClusteringResults({ fileId }: ClusteringResultsProps) {
           results={results}
           onResultSelect={setSelectedResultId}
           apiBaseUrl={API_BASE_URL}
+        />
+      )}
+
+      {/* Cluster Detail Drawer */}
+      {selectedCluster && (
+        <ClusterDetailDrawer
+          resultId={selectedCluster.resultId}
+          clusterId={selectedCluster.clusterId}
+          clusterInfo={selectedCluster.clusterInfo}
+          isOpen={!!selectedCluster}
+          onClose={() => setSelectedCluster(null)}
         />
       )}
     </div>
@@ -92,7 +108,8 @@ function ExecutiveView({
   analysisLoading,
   analysisError,
   results,
-  onResultSelect 
+  onResultSelect,
+  onClusterClick
 }: any) {
   return (
     <div className="executive-view">
@@ -149,7 +166,11 @@ function ExecutiveView({
             <h3>Cluster Breakdown</h3>
             <div className="clusters-grid">
               {analysis.cluster_insights.map((cluster: any) => (
-                <div key={cluster.cluster_id} className="cluster-card">
+                <div 
+                  key={cluster.cluster_id} 
+                  className="cluster-card clickable"
+                  onClick={() => onClusterClick(cluster.cluster_id, cluster)}
+                >
                   <div className="cluster-header">
                     <h4>Cluster {cluster.cluster_id}</h4>
                     <span className="cluster-size">{cluster.size} alarms ({cluster.percentage}%)</span>
@@ -160,6 +181,7 @@ function ExecutiveView({
                       <span key={idx} className="attribute-tag">{attr}</span>
                     ))}
                   </div>
+                  <div className="cluster-action-hint">Click to view details →</div>
                 </div>
               ))}
               {analysis.noise_points > 0 && (
