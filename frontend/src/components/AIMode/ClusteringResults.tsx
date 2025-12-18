@@ -183,6 +183,14 @@ function ExecutiveView({
                     </span>
                   </div>
                   <p className="cluster-description">{cluster.description}</p>
+                  
+                  {/* Distinguishing Factors */}
+                  {cluster.distinguishing_factors && (
+                    <p className="cluster-distinguishing-factors">
+                      <strong>🔍 {cluster.distinguishing_factors}</strong>
+                    </p>
+                  )}
+                  
                   <div className="cluster-attributes">
                     {cluster.key_attributes.map((attr: string, idx: number) => (
                       <span key={idx} className="attribute-tag">{attr}</span>

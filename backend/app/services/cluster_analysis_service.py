@@ -287,13 +287,17 @@ class ClusterAnalysisService:
             cluster_id, cluster_size, top_values, terminology
         )
         
+        # Extract distinguishing factors explanation
+        distinguishing_factors = ClusterAnalysisService._extract_distinguishing_factors(top_values)
+        
         return {
             "cluster_id": int(cluster_id),
             "size": int(cluster_size),
             "percentage": float(round(percentage, 1)),
             "characteristics": top_values,
             "description": description,
-            "key_attributes": ClusterAnalysisService._extract_key_attributes(top_values)
+            "key_attributes": ClusterAnalysisService._extract_key_attributes(top_values),
+            "distinguishing_factors": distinguishing_factors
         }
     
     @staticmethod
@@ -330,18 +334,106 @@ class ClusterAnalysisService:
             return f"Cluster {cluster_id}: {size} {terminology['plural']}"
     
     @staticmethod
+    def _extract_distinguishing_factors(top_values: Dict[str, Any]) -> str:
+        """
+        Generate a human-readable explanation of what distinguishes this cluster.
+        This helps users understand why similar alarms are in different clusters.
+        """
+        factors = []
+        
+        # Check for specific affected objects
+        if 'AffectedMoDisplayName' in top_values:
+            display_name = top_values['AffectedMoDisplayName']['value']
+            pct = top_values['AffectedMoDisplayName']['percentage']
+            if pct > 60:
+                factors.append(f"primarily affecting '{display_name}' ({pct:.0f}% of alarms)")
+        
+        # Check for specific object IDs (different physical devices)
+        if 'AffectedMoId' in top_values and len(factors) == 0:
+            mo_id = top_values['AffectedMoId']['value']
+            pct = top_values['AffectedMoId']['percentage']
+            if pct > 60:
+                # Extract a meaningful part of the ID
+                mo_id_display = mo_id[:30] + "..." if len(mo_id) > 30 else mo_id
+                factors.append(f"concentrated on specific object (ID: {mo_id_display}, {pct:.0f}%)")
+        
+        # Check acknowledgment patterns
+        if 'Acknowledge' in top_values:
+            ack_status = top_values['Acknowledge']['value']
+            pct = top_values['Acknowledge']['percentage']
+            if pct > 70:
+                factors.append(f"{pct:.0f}% are {ack_status.lower()}")
+        
+        # Check lifecycle state
+        if 'LifeCycleState' in top_values:
+            state = top_values['LifeCycleState']['value']
+            pct = top_values['LifeCycleState']['percentage']
+            if pct > 70:
+                factors.append(f"{pct:.0f}% in '{state}' state")
+        
+        # Check for temporal patterns (if timestamps cluster together)
+        if 'CreateTime' in top_values:
+            # If create time is consistent, it suggests a time-based event
+            pct = top_values['CreateTime']['percentage']
+            if pct > 30:  # Multiple alarms at similar time
+                factors.append(f"occurred in a specific time window")
+        
+        # Generate explanation
+        if factors:
+            return "Distinguished by: " + "; ".join(factors)
+        else:
+            return "Distinct pattern in alarm characteristics and object relationships"
+    
+    @staticmethod
     def _extract_key_attributes(top_values: Dict[str, Any]) -> List[str]:
-        """Extract key attributes for quick reference"""
+        """Extract key attributes for quick reference - focus on distinguishing factors"""
         attributes = []
         
+        # Primary identifiers (always show these)
         if 'Code' in top_values:
             attributes.append(f"Code: {top_values['Code']['value']}")
         if 'OrigSeverity' in top_values:
             attributes.append(f"Severity: {top_values['OrigSeverity']['value']}")
-        if 'AffectedMoType' in top_values:
+        
+        # Distinguishing factors that separate similar alarms
+        # Show specific affected objects (not just type)
+        if 'AffectedMoDisplayName' in top_values:
+            display_name = top_values['AffectedMoDisplayName']['value']
+            pct = top_values['AffectedMoDisplayName']['percentage']
+            # Only show if it's a dominant pattern (helps distinguish clusters)
+            if pct > 50:
+                # Truncate long names
+                display_name_short = display_name if len(display_name) < 30 else display_name[:27] + "..."
+                attributes.append(f"Object: {display_name_short} ({pct:.0f}%)")
+        
+        # Object Type (more general)
+        if 'AffectedMoType' in top_values and 'AffectedMoDisplayName' not in top_values:
             mo_type = top_values['AffectedMoType']['value']
             mo_type_clean = mo_type.split('.')[-1] if '.' in mo_type else mo_type
             attributes.append(f"Type: {mo_type_clean}")
+        
+        # Acknowledgment status (helps distinguish active vs acknowledged)
+        if 'Acknowledge' in top_values:
+            ack_status = top_values['Acknowledge']['value']
+            pct = top_values['Acknowledge']['percentage']
+            if pct > 70:  # Only show if dominant
+                attributes.append(f"Status: {ack_status} ({pct:.0f}%)")
+        
+        # Lifecycle state
+        if 'LifeCycleState' in top_values:
+            state = top_values['LifeCycleState']['value']
+            pct = top_values['LifeCycleState']['percentage']
+            if pct > 70:
+                attributes.append(f"State: {state}")
+        
+        # If we still don't have many attributes, add object ID pattern
+        if len(attributes) < 4 and 'AffectedMoId' in top_values:
+            mo_id = top_values['AffectedMoId']['value']
+            pct = top_values['AffectedMoId']['percentage']
+            if pct > 50:
+                # Show truncated ID
+                mo_id_short = mo_id[:20] + "..." if len(mo_id) > 20 else mo_id
+                attributes.append(f"Obj ID: {mo_id_short}")
         
         return attributes
     
