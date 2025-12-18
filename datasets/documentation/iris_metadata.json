@@ -1,0 +1,30 @@
+{
+  "name": "Iris Dataset",
+  "source": "UCI Machine Learning Repository (via scikit-learn)",
+  "records": 150,
+  "features": [
+    "sepal length (cm)",
+    "sepal width (cm)",
+    "petal length (cm)",
+    "petal width (cm)",
+    "species"
+  ],
+  "numeric_features": [
+    "sepal length (cm)",
+    "sepal width (cm)",
+    "petal length (cm)",
+    "petal width (cm)"
+  ],
+  "categorical_features": [
+    "species"
+  ],
+  "description": "Famous dataset containing measurements of 150 iris flowers from 3 species",
+  "clustering_features": [
+    "sepal length (cm)",
+    "sepal width (cm)",
+    "petal length (cm)",
+    "petal width (cm)"
+  ],
+  "expected_clusters": 3,
+  "use_case": "Validate that clustering algorithms correctly identify the 3 species"
+}

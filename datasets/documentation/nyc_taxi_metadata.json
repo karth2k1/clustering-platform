@@ -1,0 +1,59 @@
+{
+  "name": "NYC Taxi Trip Sample",
+  "source": "Synthetic data based on NYC taxi patterns",
+  "records": 10000,
+  "features": [
+    "pickup_latitude",
+    "pickup_longitude",
+    "dropoff_latitude",
+    "dropoff_longitude",
+    "trip_distance_miles",
+    "trip_duration_minutes",
+    "fare_amount",
+    "passenger_count"
+  ],
+  "numeric_features": [
+    "pickup_latitude",
+    "pickup_longitude",
+    "dropoff_latitude",
+    "dropoff_longitude",
+    "trip_distance_miles",
+    "trip_duration_minutes",
+    "fare_amount",
+    "passenger_count"
+  ],
+  "categorical_features": [],
+  "description": "NYC taxi trip data with pickup/dropoff locations and trip details",
+  "clustering_features": {
+    "spatial": [
+      "pickup_latitude",
+      "pickup_longitude",
+      "dropoff_latitude",
+      "dropoff_longitude"
+    ],
+    "trip_characteristics": [
+      "trip_distance_miles",
+      "trip_duration_minutes",
+      "fare_amount"
+    ]
+  },
+  "hotspots": [
+    "Times Square",
+    "Financial District",
+    "Midtown",
+    "Upper East Side",
+    "Upper West Side"
+  ],
+  "expected_clusters": "5-10 (based on geographical hotspots and trip patterns)",
+  "use_cases": [
+    "Identify popular pickup/dropoff locations",
+    "Discover trip patterns and routes",
+    "Optimize taxi dispatch locations",
+    "Identify pricing zones"
+  ],
+  "geographical_bounds": {
+    "latitude": "40.7 to 40.8",
+    "longitude": "-74.02 to -73.93",
+    "area": "Manhattan, NYC"
+  }
+}

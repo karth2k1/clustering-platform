@@ -133,6 +133,310 @@
         "min_samples": 3
       }
     }
+  },
+  "iris_classification": {
+    "name": "Iris Flower Classification (Demo)",
+    "description": "Classic machine learning dataset with 150 iris flowers. Perfect for validating that clustering algorithms work correctly and identifying the 3 species (Setosa, Versicolor, Virginica).",
+    "data_format": ["csv"],
+    "recommended_algorithms": ["K-Means", "Hierarchical", "DBSCAN"],
+    "typical_features": ["sepal length (cm)", "sepal width (cm)", "petal length (cm)", "petal width (cm)"],
+    "demo_dataset": "iris.csv",
+    "difficulty": "Easy",
+    "best_for": "First-time users, algorithm validation, educational purposes",
+    "questions": [
+      {
+        "id": "purpose",
+        "question": "What is the purpose of this clustering demo?",
+        "type": "text",
+        "required": true,
+        "default": "Validate clustering algorithms by identifying 3 flower species"
+      },
+      {
+        "id": "known_cluster_count",
+        "question": "Do you know the expected number of clusters?",
+        "type": "dropdown",
+        "options": ["Yes, exact number", "Yes, approximate range", "No"],
+        "required": true,
+        "default": "Yes, exact number"
+      },
+      {
+        "id": "expected_clusters",
+        "question": "How many clusters do you expect?",
+        "type": "number",
+        "required": false,
+        "default": 3,
+        "hint": "Iris has 3 species"
+      }
+    ],
+    "default_preprocessing": {
+      "handle_missing": "drop",
+      "scale_features": true,
+      "scaler_type": "StandardScaler",
+      "encode_categorical": false
+    },
+    "default_parameters": {
+      "K-Means": {
+        "n_clusters": 3
+      },
+      "Hierarchical": {
+        "n_clusters": 3,
+        "linkage": "ward"
+      },
+      "DBSCAN": {
+        "eps": 0.5,
+        "min_samples": 5
+      }
+    },
+    "success_criteria": "Should identify 3 distinct clusters corresponding to the 3 species",
+    "interpretation_guide": {
+      "what_to_look_for": "Three clear, well-separated clusters",
+      "expected_result": "Setosa should be very distinct; Versicolor and Virginica may have some overlap",
+      "business_value": "Demonstrates algorithm's ability to discover natural groupings in data"
+    }
+  },
+  "customer_segmentation": {
+    "name": "Customer Segmentation (Demo)",
+    "description": "Mall customer demographics and spending behavior. Identifies customer segments for targeted marketing campaigns based on age, income, and spending patterns.",
+    "data_format": ["csv"],
+    "recommended_algorithms": ["K-Means", "Hierarchical", "HDBSCAN"],
+    "typical_features": ["Age", "Annual Income (k$)", "Spending Score (1-100)", "Gender"],
+    "demo_dataset": "customer_segmentation.csv",
+    "difficulty": "Easy",
+    "best_for": "Business stakeholders, marketing teams, demonstrating ROI",
+    "questions": [
+      {
+        "id": "purpose",
+        "question": "What is the business goal of customer segmentation?",
+        "type": "text",
+        "required": true,
+        "default": "Identify customer groups for targeted marketing campaigns"
+      },
+      {
+        "id": "known_cluster_count",
+        "question": "Do you know how many customer segments exist?",
+        "type": "dropdown",
+        "options": ["Yes, exact number", "Yes, approximate range", "No"],
+        "required": true,
+        "default": "Yes, approximate range"
+      },
+      {
+        "id": "expected_segments",
+        "question": "How many customer segments do you expect?",
+        "type": "number",
+        "required": false,
+        "default": 5,
+        "hint": "Typical segments: budget shoppers, high spenders, savers, etc."
+      },
+      {
+        "id": "primary_factors",
+        "question": "What factors are most important for segmentation?",
+        "type": "dropdown",
+        "options": ["Income and spending", "Age and income", "All factors equally", "Unknown"],
+        "required": false,
+        "default": "Income and spending"
+      }
+    ],
+    "default_preprocessing": {
+      "handle_missing": "drop",
+      "scale_features": true,
+      "scaler_type": "StandardScaler",
+      "encode_categorical": true
+    },
+    "default_parameters": {
+      "K-Means": {
+        "n_clusters": 5
+      },
+      "Hierarchical": {
+        "n_clusters": 5,
+        "linkage": "ward"
+      },
+      "HDBSCAN": {
+        "min_cluster_size": 10,
+        "min_samples": 5
+      }
+    },
+    "success_criteria": "Should identify 5 distinct customer segments",
+    "interpretation_guide": {
+      "what_to_look_for": "Clear separation between high/low spenders and income levels",
+      "expected_segments": {
+        "1": "Young Budget Shoppers - Low income, moderate spending",
+        "2": "Young High Spenders - High income, high spending (target for premium products)",
+        "3": "Middle Age Moderate - Average across all metrics",
+        "4": "High Income Savers - High income but low spending (needs incentives)",
+        "5": "Senior Varied - Diverse group requiring personalized approach"
+      },
+      "business_value": "Enables targeted marketing: premium products for segment 2, discounts/incentives for segment 4",
+      "actionable_insights": [
+        "Create VIP programs for high spenders",
+        "Offer budget-friendly options for young shoppers",
+        "Design retention campaigns for savers",
+        "Personalize communications based on segment"
+      ]
+    }
+  },
+  "network_intrusion": {
+    "name": "Network Intrusion Detection (Demo)",
+    "description": "Cybersecurity use case identifying network attack patterns. Demonstrates anomaly detection by clustering normal traffic separately from various attack types (DoS, Probe, R2L, U2R).",
+    "data_format": ["csv"],
+    "recommended_algorithms": ["HDBSCAN", "DBSCAN", "K-Means"],
+    "typical_features": ["duration", "src_bytes", "dst_bytes", "count", "srv_count", "serror_rate", "rerror_rate", "same_srv_rate", "protocol_type", "service", "flag"],
+    "demo_dataset": "network_intrusion.csv",
+    "difficulty": "Medium",
+    "best_for": "IT operations, security analysts, technical demonstrations",
+    "questions": [
+      {
+        "id": "purpose",
+        "question": "What is the security goal of this clustering analysis?",
+        "type": "text",
+        "required": true,
+        "default": "Identify anomalous network traffic patterns and group attacks by type"
+      },
+      {
+        "id": "known_attack_types",
+        "question": "Do you know what types of attacks to look for?",
+        "type": "dropdown",
+        "options": ["Yes, specific types", "No, discover all anomalies", "Both known and unknown"],
+        "required": true,
+        "default": "Both known and unknown"
+      },
+      {
+        "id": "false_positive_tolerance",
+        "question": "What is your tolerance for false positives?",
+        "type": "dropdown",
+        "options": ["Low - prefer to miss attacks", "Medium - balanced", "High - catch all potential threats"],
+        "required": true,
+        "default": "Medium - balanced"
+      },
+      {
+        "id": "cluster_approach",
+        "question": "What clustering approach makes sense?",
+        "type": "dropdown",
+        "options": ["Separate normal from attacks", "Group attacks by type", "Both"],
+        "required": true,
+        "default": "Both"
+      }
+    ],
+    "default_preprocessing": {
+      "handle_missing": "drop",
+      "scale_features": true,
+      "scaler_type": "StandardScaler",
+      "encode_categorical": true
+    },
+    "default_parameters": {
+      "HDBSCAN": {
+        "min_cluster_size": 50,
+        "min_samples": 10
+      },
+      "DBSCAN": {
+        "eps": 0.5,
+        "min_samples": 20
+      },
+      "K-Means": {
+        "n_clusters": 5
+      }
+    },
+    "success_criteria": "Should identify 2-5 clusters: normal traffic and different attack categories",
+    "interpretation_guide": {
+      "what_to_look_for": "One large cluster (normal) and several smaller clusters (attacks)",
+      "expected_clusters": {
+        "normal": "Regular network traffic - largest cluster, low error rates, successful connections",
+        "DoS": "Denial of Service - high connection counts, high error rates, short durations",
+        "Probe": "Port Scanning - many connections to different services, high rejection rates",
+        "R2L": "Remote to Local - failed logins, guest access, unauthorized access attempts",
+        "U2R": "User to Root - root shell access, file creations, privilege escalation indicators"
+      },
+      "business_value": "Early detection of security threats, automated alert triage, pattern recognition for new attack types",
+      "actionable_insights": [
+        "Set up automated alerts for traffic matching attack cluster patterns",
+        "Investigate anomalous connections that don't fit normal cluster",
+        "Use cluster characteristics to tune IDS/IPS rules",
+        "Prioritize security response based on attack type clusters"
+      ],
+      "technical_notes": "Normal traffic should be largest cluster (~70% of data). Attack clusters typically smaller but have distinct patterns in error rates, connection counts, and service types."
+    }
+  },
+  "nyc_taxi_analysis": {
+    "name": "NYC Taxi Spatial Clustering (Demo)",
+    "description": "Geographical clustering of NYC taxi pickup/dropoff locations. Identifies popular areas, trip patterns, and optimal dispatch zones. Great for demonstrating spatial clustering and business intelligence.",
+    "data_format": ["csv"],
+    "recommended_algorithms": ["K-Means", "DBSCAN", "HDBSCAN"],
+    "typical_features": ["pickup_latitude", "pickup_longitude", "dropoff_latitude", "dropoff_longitude", "trip_distance_miles", "trip_duration_minutes", "fare_amount"],
+    "demo_dataset": "nyc_taxi.csv",
+    "difficulty": "Medium",
+    "best_for": "Business intelligence, operations optimization, geographical analysis",
+    "questions": [
+      {
+        "id": "purpose",
+        "question": "What is the business goal of this spatial analysis?",
+        "type": "text",
+        "required": true,
+        "default": "Identify high-demand zones and optimize taxi dispatch locations"
+      },
+      {
+        "id": "clustering_focus",
+        "question": "What should we cluster on?",
+        "type": "dropdown",
+        "options": ["Pickup locations only", "Dropoff locations only", "Both pickup and dropoff", "Trip characteristics (distance, duration, fare)"],
+        "required": true,
+        "default": "Pickup locations only"
+      },
+      {
+        "id": "expected_zones",
+        "question": "Do you know how many hotspot zones exist?",
+        "type": "dropdown",
+        "options": ["Yes, exact number", "Yes, approximate range", "No, discover them"],
+        "required": true,
+        "default": "Yes, approximate range"
+      },
+      {
+        "id": "zone_count",
+        "question": "How many zones do you expect?",
+        "type": "number",
+        "required": false,
+        "default": 5,
+        "hint": "Manhattan typically has 5-10 major zones"
+      }
+    ],
+    "default_preprocessing": {
+      "handle_missing": "drop",
+      "scale_features": true,
+      "scaler_type": "StandardScaler",
+      "encode_categorical": false
+    },
+    "default_parameters": {
+      "K-Means": {
+        "n_clusters": 5
+      },
+      "DBSCAN": {
+        "eps": 0.005,
+        "min_samples": 50
+      },
+      "HDBSCAN": {
+        "min_cluster_size": 100,
+        "min_samples": 20
+      }
+    },
+    "success_criteria": "Should identify 5-10 geographical clusters corresponding to Manhattan neighborhoods/hotspots",
+    "interpretation_guide": {
+      "what_to_look_for": "Geographical clusters that align with known NYC neighborhoods and business districts",
+      "expected_clusters": {
+        "Times Square": "High pickup density, mixed trip distances, tourist area",
+        "Financial District": "Morning/evening rush patterns, business trips",
+        "Midtown": "Consistent activity, office buildings, hotels",
+        "Upper East/West Side": "Residential areas, moderate activity",
+        "Transport Hubs": "Airports, train stations (if included in sample)"
+      },
+      "business_value": "Optimize taxi placement, dynamic pricing zones, driver allocation, predict demand patterns",
+      "actionable_insights": [
+        "Deploy more taxis to high-demand clusters during peak hours",
+        "Set up surge pricing zones based on cluster characteristics",
+        "Identify underserved areas (low cluster density)",
+        "Optimize driver routes between popular pickup/dropoff cluster pairs",
+        "Predict earnings potential for drivers based on zone clusters"
+      ],
+      "technical_notes": "For spatial clustering, may want to use only lat/lon features. Including fare/duration can identify 'trip type' clusters instead of geographical zones. DBSCAN works well for geographical data as it handles arbitrary shapes.",
+      "visualization_tips": "Plot clusters on a map overlay, use different colors for each cluster, cluster centers show optimal dispatch locations"
+    }
   }
 }
 

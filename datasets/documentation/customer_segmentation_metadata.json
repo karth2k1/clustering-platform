@@ -1,0 +1,35 @@
+{
+  "name": "Mall Customer Segmentation",
+  "source": "Synthetic customer data",
+  "records": 200,
+  "features": [
+    "CustomerID",
+    "Gender",
+    "Age",
+    "Annual Income (k$)",
+    "Spending Score (1-100)"
+  ],
+  "numeric_features": [
+    "Age",
+    "Annual Income (k$)",
+    "Spending Score (1-100)"
+  ],
+  "categorical_features": [
+    "Gender"
+  ],
+  "description": "Customer demographics and spending patterns for segmentation",
+  "clustering_features": [
+    "Age",
+    "Annual Income (k$)",
+    "Spending Score (1-100)"
+  ],
+  "expected_clusters": 5,
+  "segments": {
+    "1": "Young Budget Shoppers",
+    "2": "Young High Spenders",
+    "3": "Middle Age Moderate",
+    "4": "High Income Savers",
+    "5": "Senior Varied"
+  },
+  "use_case": "Identify customer segments for targeted marketing campaigns"
+}
