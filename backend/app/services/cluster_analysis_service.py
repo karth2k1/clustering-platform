@@ -284,7 +284,7 @@ class ClusterAnalysisService:
         
         # Generate cluster description
         description = ClusterAnalysisService._generate_cluster_description(
-            cluster_id, cluster_size, top_values
+            cluster_id, cluster_size, top_values, terminology
         )
         
         return {
@@ -300,32 +300,34 @@ class ClusterAnalysisService:
     def _generate_cluster_description(
         cluster_id: int,
         size: int,
-        top_values: Dict[str, Any]
+        top_values: Dict[str, Any],
+        terminology: Dict[str, str]
     ) -> str:
         """Generate human-readable cluster description"""
         parts = []
         
-        # Severity
+        # Severity (for alarms)
         if 'OrigSeverity' in top_values:
             severity = top_values['OrigSeverity']['value']
             parts.append(f"{severity} severity")
         
-        # Alarm code
+        # Alarm code (for alarms)
         if 'Code' in top_values:
             code = top_values['Code']['value']
-            parts.append(f"alarm code {code}")
+            parts.append(f"code {code}")
         
-        # Affected object type
+        # Affected object type (for alarms)
         if 'AffectedMoType' in top_values:
             mo_type = top_values['AffectedMoType']['value']
             # Clean up type name
             mo_type_clean = mo_type.split('.')[-1] if '.' in mo_type else mo_type
             parts.append(f"affecting {mo_type_clean} objects")
         
+        # Generic description
         if parts:
-            return f"Cluster {cluster_id}: {size} alarms with {', '.join(parts)}"
+            return f"Cluster {cluster_id}: {size} {terminology['plural']} with {', '.join(parts)}"
         else:
-            return f"Cluster {cluster_id}: {size} alarms"
+            return f"Cluster {cluster_id}: {size} {terminology['plural']}"
     
     @staticmethod
     def _extract_key_attributes(top_values: Dict[str, Any]) -> List[str]:
@@ -498,7 +500,7 @@ class ClusterAnalysisService:
                 records.append(record)
             
             # Generate importance explanation
-            importance = ClusterAnalysisService._generate_cluster_importance(insight, len(df))
+            importance = ClusterAnalysisService._generate_cluster_importance(insight, len(df), terminology)
             
             # Get clustering features explanation (adapt to data type)
             if data_type == 'alarm':
@@ -694,7 +696,7 @@ class ClusterAnalysisService:
             return {"error": f"Error getting clustering features: {str(e)}"}
     
     @staticmethod
-    def _generate_cluster_importance(insight: Dict[str, Any], total_alarms: int) -> Dict[str, Any]:
+    def _generate_cluster_importance(insight: Dict[str, Any], total_records: int, terminology: Dict[str, str]) -> Dict[str, Any]:
         """Generate explanation of why this cluster is important"""
         importance_reasons = []
         priority = "medium"
@@ -704,42 +706,42 @@ class ClusterAnalysisService:
             importance_reasons.append({
                 "type": "size",
                 "title": "Large Cluster",
-                "description": f"This cluster represents {insight['percentage']}% of all alarms, making it a high-priority issue."
+                "description": f"This cluster represents {insight['percentage']}% of all {terminology['plural']}, making it a high-priority group."
             })
             priority = "high"
         elif insight['percentage'] > 10:
             importance_reasons.append({
                 "type": "size",
                 "title": "Significant Cluster",
-                "description": f"This cluster represents {insight['percentage']}% of alarms, indicating a recurring pattern."
+                "description": f"This cluster represents {insight['percentage']}% of {terminology['plural']}, indicating a recurring pattern."
             })
         
-        # Check severity
+        # Check severity (for alarms)
         if 'OrigSeverity' in insight.get('characteristics', {}):
             severity = insight['characteristics']['OrigSeverity']['value']
             if severity == 'Critical':
                 importance_reasons.append({
                     "type": "severity",
                     "title": "Critical Severity",
-                    "description": "All alarms in this cluster are marked as Critical, requiring immediate attention."
+                    "description": f"All {terminology['plural']} in this cluster are marked as Critical, requiring immediate attention."
                 })
                 priority = "high"
             elif severity == 'Warning':
                 importance_reasons.append({
                     "type": "severity",
                     "title": "Warning Severity",
-                    "description": "These alarms indicate potential issues that should be monitored."
+                    "description": f"These {terminology['plural']} indicate potential issues that should be monitored."
                 })
         
-        # Check if it's a specific alarm code pattern
+        # Check if it's a specific code pattern (for alarms)
         if 'Code' in insight.get('characteristics', {}):
             code = insight['characteristics']['Code']['value']
             code_pct = insight['characteristics']['Code']['percentage']
             if code_pct > 80:
                 importance_reasons.append({
                     "type": "pattern",
-                    "title": "Consistent Alarm Pattern",
-                    "description": f"{code_pct:.0f}% of alarms share the same code ({code}), suggesting a systemic issue."
+                    "title": "Consistent Pattern",
+                    "description": f"{code_pct:.0f}% of {terminology['plural']} share the same code ({code}), suggesting a systemic issue."
                 })
         
         # Default if no specific reasons
@@ -747,12 +749,12 @@ class ClusterAnalysisService:
             importance_reasons.append({
                 "type": "general",
                 "title": "Pattern Identified",
-                "description": "This cluster represents a distinct pattern of alarms that may share common root causes."
+                "description": f"This cluster represents a distinct pattern of {terminology['plural']} that may share common characteristics."
             })
         
         return {
             "priority": priority,
             "reasons": importance_reasons,
-            "summary": f"This cluster contains {insight['size']} alarms ({insight['percentage']}% of total) with similar characteristics."
+            "summary": f"This cluster contains {insight['size']} {terminology['plural']} ({insight['percentage']}% of total) with similar characteristics."
         }
 
