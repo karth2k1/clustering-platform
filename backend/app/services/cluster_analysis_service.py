@@ -12,6 +12,172 @@ from collections import Counter
 class ClusterAnalysisService:
     """Service for analyzing clustering results and generating insights"""
     
+    # Terminology mappings for different data types
+    TERMINOLOGY = {
+        'iris': {
+            'singular': 'flower',
+            'plural': 'flowers',
+            'item': 'record',
+            'items': 'records'
+        },
+        'customer': {
+            'singular': 'customer',
+            'plural': 'customers',
+            'item': 'customer',
+            'items': 'customers'
+        },
+        'network': {
+            'singular': 'event',
+            'plural': 'events',
+            'item': 'connection',
+            'items': 'connections'
+        },
+        'intrusion': {
+            'singular': 'event',
+            'plural': 'events',
+            'item': 'event',
+            'items': 'events'
+        },
+        'taxi': {
+            'singular': 'trip',
+            'plural': 'trips',
+            'item': 'trip',
+            'items': 'trips'
+        },
+        'alarm': {
+            'singular': 'alarm',
+            'plural': 'alarms',
+            'item': 'alarm',
+            'items': 'alarms'
+        },
+        'default': {
+            'singular': 'record',
+            'plural': 'records',
+            'item': 'record',
+            'items': 'records'
+        }
+    }
+    
+    @staticmethod
+    def _detect_data_type(filename: str, df: pd.DataFrame) -> str:
+        """
+        Detect the type of data based on filename and column names
+        Returns the key for TERMINOLOGY dict
+        """
+        filename_lower = filename.lower()
+        columns_lower = [col.lower() for col in df.columns]
+        
+        # Check filename first
+        if 'iris' in filename_lower:
+            return 'iris'
+        elif 'customer' in filename_lower or 'segmentation' in filename_lower:
+            return 'customer'
+        elif 'taxi' in filename_lower or 'trip' in filename_lower:
+            return 'taxi'
+        elif 'network' in filename_lower or 'intrusion' in filename_lower:
+            return 'intrusion'
+        elif 'alarm' in filename_lower or 'intersight' in filename_lower:
+            return 'alarm'
+        
+        # Check column names
+        if any('species' in col for col in columns_lower):
+            return 'iris'
+        elif any('customer' in col or 'spending' in col for col in columns_lower):
+            return 'customer'
+        elif any('pickup' in col or 'dropoff' in col or 'fare' in col for col in columns_lower):
+            return 'taxi'
+        elif any('attack' in col or 'protocol' in col or 'src_bytes' in col for col in columns_lower):
+            return 'intrusion'
+        elif any('severity' in col or 'code' in col or 'alarm' in col for col in columns_lower):
+            return 'alarm'
+        
+        return 'default'
+    
+    @staticmethod
+    def _get_terminology(data_type: str) -> Dict[str, str]:
+        """Get terminology for a given data type"""
+        return ClusterAnalysisService.TERMINOLOGY.get(data_type, ClusterAnalysisService.TERMINOLOGY['default'])
+    
+    @staticmethod
+    def _extract_record_details(row: pd.Series, data_type: str) -> Dict[str, Any]:
+        """
+        Extract record details in a generic way, adapting to data type
+        
+        Args:
+            row: Pandas Series representing a single record
+            data_type: Type of data (iris, customer, network, etc.)
+        
+        Returns:
+            Dictionary with record details formatted appropriately
+        """
+        record = {"index": int(row.name) if row.name is not None else 0}
+        
+        # For alarm data, extract specific fields
+        if data_type == 'alarm':
+            record.update({
+                "code": str(row.get('Code', 'N/A')),
+                "name": str(row.get('Name', 'N/A')),
+                "severity": str(row.get('OrigSeverity', 'N/A')),
+                "description": str(row.get('Description', 'N/A')),
+                "affected_mo_type": str(row.get('AffectedMoType', 'N/A')),
+                "affected_mo_display_name": str(row.get('AffectedMoDisplayName', 'N/A')),
+                "affected_mo_id": str(row.get('AffectedMoId', 'N/A')),
+                "acknowledge": str(row.get('Acknowledge', 'N/A')),
+                "create_time": str(row.get('CreateTime', 'N/A')),
+                "last_transition_time": str(row.get('LastTransitionTime', 'N/A')),
+            })
+            
+            # Add nested object information if available
+            if pd.notna(row.get('AffectedMo')) and isinstance(row.get('AffectedMo'), dict):
+                affected_mo = row.get('AffectedMo')
+                record["affected_mo_details"] = {
+                    "moid": str(affected_mo.get('Moid', 'N/A')),
+                    "object_type": str(affected_mo.get('ObjectType', 'N/A')),
+                    "link": str(affected_mo.get('link', 'N/A'))
+                }
+        else:
+            # For non-alarm data, extract key identifying fields generically
+            # Try common identifier fields first
+            for key_field in ['name', 'Name', 'id', 'ID', 'CustomerID', 'code', 'Code', 'species']:
+                if key_field in row.index:
+                    record["name"] = str(row.get(key_field, 'N/A'))
+                    break
+            else:
+                # If no identifier found, use first column
+                if len(row.index) > 0:
+                    first_col = row.index[0]
+                    record["name"] = str(row.get(first_col, 'N/A'))
+            
+            # Add severity/importance if it exists (could be for various data types)
+            for severity_field in ['severity', 'Severity', 'priority', 'Priority', 'importance']:
+                if severity_field in row.index:
+                    record["severity"] = str(row.get(severity_field, 'Normal'))
+                    break
+            else:
+                record["severity"] = 'Normal'  # Default
+            
+            # Add a description-like field if available
+            for desc_field in ['description', 'Description', 'details', 'Details', 'species']:
+                if desc_field in row.index:
+                    record["description"] = str(row.get(desc_field, ''))
+                    break
+            else:
+                record["description"] = ''
+        
+        # Add all other fields as additional info
+        additional_info = {}
+        for col in row.index:
+            if col not in ['cluster'] and col not in record:
+                val = row.get(col)
+                if pd.notna(val):
+                    if isinstance(val, (dict, list)):
+                        additional_info[col] = str(val)
+                    else:
+                        additional_info[col] = str(val)
+        
+        record["additional_info"] = additional_info
+        return record
+    
     @staticmethod
     def analyze_clusters(
         db: Session,
@@ -48,6 +214,10 @@ class ClusterAnalysisService:
             cluster_labels = np.array(result.cluster_labels)
             df['cluster'] = cluster_labels
             
+            # Detect data type and get terminology
+            data_type = ClusterAnalysisService._detect_data_type(data_file.original_filename, df)
+            terminology = ClusterAnalysisService._get_terminology(data_type)
+            
             # Analyze clusters - convert numpy types to Python native types
             unique_clusters = sorted([int(c) for c in set(cluster_labels) if c != -1])
             noise_count = int(np.sum(cluster_labels == -1))
@@ -57,13 +227,13 @@ class ClusterAnalysisService:
             for cluster_id in unique_clusters:
                 cluster_data = df[df['cluster'] == cluster_id]
                 insight = ClusterAnalysisService._analyze_single_cluster(
-                    cluster_id, cluster_data, len(df)
+                    cluster_id, cluster_data, len(df), terminology
                 )
                 cluster_insights.append(insight)
             
             # Generate executive summary
             executive_summary = ClusterAnalysisService._generate_executive_summary(
-                cluster_insights, noise_count, len(df), data_file.original_filename
+                cluster_insights, noise_count, len(df), data_file.original_filename, terminology
             )
             
             return {
@@ -71,7 +241,8 @@ class ClusterAnalysisService:
                 "executive_summary": executive_summary,
                 "total_clusters": int(len(unique_clusters)),
                 "noise_points": int(noise_count),
-                "total_points": int(len(df))
+                "total_points": int(len(df)),
+                "terminology": terminology  # Include terminology in response
             }
             
         except Exception as e:
@@ -81,7 +252,8 @@ class ClusterAnalysisService:
     def _analyze_single_cluster(
         cluster_id: int,
         cluster_data: pd.DataFrame,
-        total_rows: int
+        total_rows: int,
+        terminology: Dict[str, str]
     ) -> Dict[str, Any]:
         """Analyze a single cluster"""
         cluster_size = len(cluster_data)
@@ -176,7 +348,8 @@ class ClusterAnalysisService:
         cluster_insights: List[Dict[str, Any]],
         noise_count: int,
         total_points: int,
-        filename: str
+        filename: str,
+        terminology: Dict[str, str]
     ) -> Dict[str, Any]:
         """Generate executive-friendly summary"""
         
@@ -186,7 +359,7 @@ class ClusterAnalysisService:
         # Find largest cluster
         largest_cluster = sorted_clusters[0] if sorted_clusters else None
         
-        # Count by severity
+        # Count by severity (for alarms)
         severity_counts = {}
         for cluster in cluster_insights:
             if 'OrigSeverity' in cluster.get('characteristics', {}):
@@ -199,18 +372,19 @@ class ClusterAnalysisService:
         if largest_cluster:
             insights.append({
                 "type": "primary",
-                "title": "Largest Issue Group",
-                "description": f"{int(largest_cluster['size'])} alarms ({float(largest_cluster['percentage'])}%) share similar characteristics: {largest_cluster['description']}"
+                "title": "Largest Group",
+                "description": f"{int(largest_cluster['size'])} {terminology['plural']} ({float(largest_cluster['percentage'])}%) share similar characteristics: {largest_cluster['description']}"
             })
         
+        # Only show severity info if this is alarm data
         if severity_counts:
             critical_count = int(severity_counts.get('Critical', 0))
             if critical_count > 0:
                 critical_clusters = len([c for c in cluster_insights if c['characteristics'].get('OrigSeverity', {}).get('value') == 'Critical'])
                 insights.append({
                     "type": "critical",
-                    "title": "Critical Alarms",
-                    "description": f"{critical_count} critical alarms identified across {int(critical_clusters)} clusters"
+                    "title": "Critical Items",
+                    "description": f"{critical_count} critical {terminology['plural']} identified across {int(critical_clusters)} clusters"
                 })
         
         if noise_count > 0:
@@ -218,29 +392,30 @@ class ClusterAnalysisService:
             insights.append({
                 "type": "info",
                 "title": "Unique Cases",
-                "description": f"{int(noise_count)} alarms ({noise_pct:.1f}%) are unique and don't fit into major patterns - may require individual attention"
+                "description": f"{int(noise_count)} {terminology['plural']} ({noise_pct:.1f}%) are unique and don't fit into major patterns - may require individual attention"
             })
         
         return {
-            "title": f"Alarm Analysis: {filename}",
-            "overview": f"Analyzed {int(total_points)} alarms and identified {int(len(cluster_insights))} distinct patterns",
+            "title": f"Analysis: {filename}",
+            "overview": f"Analyzed {int(total_points)} {terminology['plural']} and identified {int(len(cluster_insights))} distinct patterns",
             "insights": insights,
-            "recommendations": ClusterAnalysisService._generate_recommendations(cluster_insights, severity_counts)
+            "recommendations": ClusterAnalysisService._generate_recommendations(cluster_insights, severity_counts, terminology)
         }
     
     @staticmethod
     def _generate_recommendations(
         cluster_insights: List[Dict[str, Any]],
-        severity_counts: Dict[str, int]
+        severity_counts: Dict[str, int],
+        terminology: Dict[str, str]
     ) -> List[str]:
         """Generate actionable recommendations"""
         recommendations = []
         
-        # Check for critical issues
+        # Check for critical issues (only for alarm data)
         critical_count = int(severity_counts.get('Critical', 0))
         if critical_count > 0:
             recommendations.append(
-                f"Prioritize investigation of {critical_count} critical alarms - these represent the highest risk"
+                f"Prioritize investigation of {critical_count} critical {terminology['plural']} - these represent the highest risk"
             )
         
         # Check for large clusters
@@ -248,18 +423,18 @@ class ClusterAnalysisService:
         if large_clusters:
             pct = float(large_clusters[0]['percentage'])
             recommendations.append(
-                f"Focus on the largest cluster(s) - addressing root causes here could resolve {pct:.1f}% of alarms"
+                f"Focus on the largest cluster(s) - addressing root causes here could resolve {pct:.1f}% of {terminology['plural']}"
             )
         
         # Check for noise
         if any('noise' in str(c).lower() for c in cluster_insights):
             recommendations.append(
-                "Review unique alarms individually - they may indicate new or emerging issues"
+                f"Review unique {terminology['plural']} individually - they may indicate distinct patterns or outliers"
             )
         
         if not recommendations:
             recommendations.append(
-                "Alarms are well-distributed across patterns - consider investigating each cluster systematically"
+                f"Data is well-distributed across patterns - consider investigating each cluster systematically"
             )
         
         return recommendations
@@ -301,7 +476,11 @@ class ClusterAnalysisService:
             cluster_labels = np.array(result.cluster_labels)
             df['cluster'] = cluster_labels
             
-            # Filter alarms for this cluster
+            # Detect data type and get terminology
+            data_type = ClusterAnalysisService._detect_data_type(data_file.original_filename, df)
+            terminology = ClusterAnalysisService._get_terminology(data_type)
+            
+            # Filter items for this cluster
             cluster_data = df[df['cluster'] == cluster_id].copy()
             
             if len(cluster_data) == 0:
@@ -309,74 +488,54 @@ class ClusterAnalysisService:
             
             # Get cluster insight
             insight = ClusterAnalysisService._analyze_single_cluster(
-                cluster_id, cluster_data, len(df)
+                cluster_id, cluster_data, len(df), terminology
             )
             
-            # Extract alarm details
-            alarms = []
+            # Extract record details (adapts to data type)
+            records = []
             for idx, row in cluster_data.iterrows():
-                alarm = {
-                    "index": int(idx),
-                    "code": str(row.get('Code', 'N/A')),
-                    "name": str(row.get('Name', 'N/A')),
-                    "severity": str(row.get('OrigSeverity', 'N/A')),
-                    "description": str(row.get('Description', 'N/A')),
-                    "affected_mo_type": str(row.get('AffectedMoType', 'N/A')),
-                    "affected_mo_display_name": str(row.get('AffectedMoDisplayName', 'N/A')),
-                    "affected_mo_id": str(row.get('AffectedMoId', 'N/A')),
-                    "acknowledge": str(row.get('Acknowledge', 'N/A')),
-                    "create_time": str(row.get('CreateTime', 'N/A')),
-                    "last_transition_time": str(row.get('LastTransitionTime', 'N/A')),
-                }
-                
-                # Add nested object information if available
-                if pd.notna(row.get('AffectedMo')):
-                    affected_mo = row.get('AffectedMo')
-                    if isinstance(affected_mo, dict):
-                        alarm["affected_mo_details"] = {
-                            "moid": str(affected_mo.get('Moid', 'N/A')),
-                            "object_type": str(affected_mo.get('ObjectType', 'N/A')),
-                            "link": str(affected_mo.get('link', 'N/A'))
-                        }
-                
-                # Add all other fields as additional info
-                additional_info = {}
-                for col in cluster_data.columns:
-                    if col not in ['cluster'] and col not in alarm:
-                        val = row.get(col)
-                        if pd.notna(val):
-                            # Convert to string, handle complex types
-                            if isinstance(val, (dict, list)):
-                                additional_info[col] = str(val)
-                            else:
-                                additional_info[col] = str(val)
-                
-                alarm["additional_info"] = additional_info
-                alarms.append(alarm)
+                record = ClusterAnalysisService._extract_record_details(row, data_type)
+                records.append(record)
             
             # Generate importance explanation
             importance = ClusterAnalysisService._generate_cluster_importance(insight, len(df))
             
-            # Get clustering features explanation
-            clustering_explanation = {
-                "title": "Why Same Alarm Codes Are in Different Clusters",
-                "description": "Clustering uses multiple features (not just alarm code) to group alarms. Alarms with the same code can be separated if they differ in:",
-                "features": [
-                    "Affected object type and location",
-                    "Object identifiers and relationships",
-                    "Temporal patterns",
-                    "Other alarm characteristics"
-                ],
-                "note": "This is expected behavior - the same alarm code on different systems/objects forms separate clusters, helping identify which specific objects or systems are affected."
-            }
+            # Get clustering features explanation (adapt to data type)
+            if data_type == 'alarm':
+                clustering_explanation = {
+                    "title": "Why Same Alarm Codes Are in Different Clusters",
+                    "description": f"Clustering uses multiple features (not just alarm code) to group {terminology['plural']}. {terminology['plural'].capitalize()} with the same code can be separated if they differ in:",
+                    "features": [
+                        "Affected object type and location",
+                        "Object identifiers and relationships",
+                        "Temporal patterns",
+                        "Other characteristics"
+                    ],
+                    "note": f"This is expected behavior - the same alarm code on different systems/objects forms separate clusters, helping identify which specific objects or systems are affected."
+                }
+            else:
+                clustering_explanation = {
+                    "title": "How Clustering Works",
+                    "description": f"Clustering uses multiple features to group similar {terminology['plural']}. {terminology['plural'].capitalize()} in the same cluster share similar characteristics across:",
+                    "features": [
+                        "Numerical measurements",
+                        "Categorical attributes",
+                        "Pattern similarities",
+                        "Statistical distributions"
+                    ],
+                    "note": f"The algorithm automatically discovered these groupings based on similarities in the data."
+                }
             
             return {
                 "cluster_id": int(cluster_id),
                 "insight": insight,
                 "importance": importance,
                 "clustering_explanation": clustering_explanation,
-                "alarm_count": int(len(alarms)),
-                "alarms": alarms
+                "record_count": int(len(records)),  # Generic term
+                "alarm_count": int(len(records)),  # Backwards compatibility
+                "records": records,  # Generic term
+                "alarms": records,  # Backwards compatibility
+                "terminology": terminology  # Include terminology for frontend
             }
             
         except Exception as e:
@@ -418,72 +577,44 @@ class ClusterAnalysisService:
             cluster_labels = np.array(result.cluster_labels)
             df['cluster'] = cluster_labels
             
+            # Detect data type and get terminology
+            data_type = ClusterAnalysisService._detect_data_type(data_file.original_filename, df)
+            terminology = ClusterAnalysisService._get_terminology(data_type)
+            
             # Filter noise points (cluster_id == -1)
             noise_data = df[df['cluster'] == -1].copy()
             
             if len(noise_data) == 0:
                 return {"error": "No noise points found"}
             
-            # Extract alarm details (same format as cluster details)
-            alarms = []
+            # Extract record details (adapts to data type)
+            records = []
             for idx, row in noise_data.iterrows():
-                alarm = {
-                    "index": int(idx),
-                    "code": str(row.get('Code', 'N/A')),
-                    "name": str(row.get('Name', 'N/A')),
-                    "severity": str(row.get('OrigSeverity', 'N/A')),
-                    "description": str(row.get('Description', 'N/A')),
-                    "affected_mo_type": str(row.get('AffectedMoType', 'N/A')),
-                    "affected_mo_display_name": str(row.get('AffectedMoDisplayName', 'N/A')),
-                    "affected_mo_id": str(row.get('AffectedMoId', 'N/A')),
-                    "acknowledge": str(row.get('Acknowledge', 'N/A')),
-                    "create_time": str(row.get('CreateTime', 'N/A')),
-                    "last_transition_time": str(row.get('LastTransitionTime', 'N/A')),
-                }
-                
-                # Add nested object information if available
-                if pd.notna(row.get('AffectedMo')):
-                    affected_mo = row.get('AffectedMo')
-                    if isinstance(affected_mo, dict):
-                        alarm["affected_mo_details"] = {
-                            "moid": str(affected_mo.get('Moid', 'N/A')),
-                            "object_type": str(affected_mo.get('ObjectType', 'N/A')),
-                            "link": str(affected_mo.get('link', 'N/A'))
-                        }
-                
-                # Add all other fields as additional info
-                additional_info = {}
-                for col in noise_data.columns:
-                    if col not in ['cluster'] and col not in alarm:
-                        val = row.get(col)
-                        if pd.notna(val):
-                            if isinstance(val, (dict, list)):
-                                additional_info[col] = str(val)
-                            else:
-                                additional_info[col] = str(val)
-                
-                alarm["additional_info"] = additional_info
-                alarms.append(alarm)
+                record = ClusterAnalysisService._extract_record_details(row, data_type)
+                records.append(record)
             
-            # Analyze noise points
+            # Analyze noise points (adapt to data type)
             unique_codes = noise_data['Code'].nunique() if 'Code' in noise_data.columns else 0
             code_distribution = dict(noise_data['Code'].value_counts().head(10)) if 'Code' in noise_data.columns else {}
             
             return {
-                "alarm_count": int(len(alarms)),
-                "unique_alarm_codes": int(unique_codes),
+                "record_count": int(len(records)),  # Generic term
+                "alarm_count": int(len(records)),  # Backwards compatibility
+                "unique_alarm_codes": int(unique_codes),  # Backwards compatibility
                 "code_distribution": {str(k): int(v) for k, v in code_distribution.items()},
-                "alarms": alarms,
+                "records": records,  # Generic term
+                "alarms": records,  # Backwards compatibility
+                "terminology": terminology,  # Include terminology for frontend
                 "explanation": {
                     "title": "Why These Are Unique Cases",
-                    "description": f"These {len(alarms)} alarms don't fit into any major cluster pattern. They may represent:",
+                    "description": f"These {len(records)} {terminology['plural']} don't fit into any major cluster pattern. They may represent:",
                     "reasons": [
-                        "Rare or one-off issues that don't follow common patterns",
-                        "Alarms with unique combinations of features that differ significantly from clustered alarms",
-                        "Potential new or emerging issues that haven't formed patterns yet",
-                        "Edge cases that require individual investigation"
+                        f"Rare or one-off {terminology['plural']} that don't follow common patterns",
+                        f"{terminology['plural'].capitalize()} with unique combinations of features that differ significantly from clustered {terminology['plural']}",
+                        "Potential new or emerging patterns that haven't formed yet",
+                        "Edge cases or outliers that require individual investigation"
                     ],
-                    "recommendation": "Review these alarms individually to identify if they represent new patterns or require special attention."
+                    "recommendation": f"Review these {terminology['plural']} individually to identify if they represent new patterns or require special attention."
                 }
             }
             

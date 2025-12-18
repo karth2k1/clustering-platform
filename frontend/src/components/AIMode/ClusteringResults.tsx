@@ -178,7 +178,9 @@ function ExecutiveView({
                 >
                   <div className="cluster-header">
                     <h4>Cluster {cluster.cluster_id}</h4>
-                    <span className="cluster-size">{cluster.size} alarms ({cluster.percentage}%)</span>
+                    <span className="cluster-size">
+                      {cluster.size} {analysis.terminology?.plural || 'records'} ({cluster.percentage}%)
+                    </span>
                   </div>
                   <p className="cluster-description">{cluster.description}</p>
                   <div className="cluster-attributes">
@@ -200,10 +202,12 @@ function ExecutiveView({
                 >
                   <div className="cluster-header">
                     <h4>Unique Cases</h4>
-                    <span className="cluster-size">{analysis.noise_points} alarms</span>
+                    <span className="cluster-size">
+                      {analysis.noise_points} {analysis.terminology?.plural || 'records'}
+                    </span>
                   </div>
                   <p className="cluster-description">
-                    These alarms don't fit into major patterns and may require individual attention
+                    These {analysis.terminology?.plural || 'records'} don't fit into major patterns and may require individual attention
                   </p>
                   <div className="cluster-action-hint">Click to view details →</div>
                 </div>

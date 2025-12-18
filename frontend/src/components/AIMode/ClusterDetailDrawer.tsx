@@ -119,12 +119,12 @@ function ClusterDetailDrawer({
                 </div>
               )}
 
-              {/* Alarms List */}
+              {/* Records List */}
               <div className="alarms-section">
                 <h3>
                   {isNoisePoints 
-                    ? `Unique Alarms (${clusterDetails.alarm_count} total, ${clusterDetails.unique_alarm_codes} unique codes)`
-                    : `Alarms in This Cluster (${clusterDetails.alarm_count})`
+                    ? `Unique ${clusterDetails.terminology?.plural || 'Records'} (${clusterDetails.alarm_count} total${clusterDetails.unique_alarm_codes ? `, ${clusterDetails.unique_alarm_codes} unique codes` : ''})`
+                    : `${clusterDetails.terminology?.plural || 'Records'} in This Cluster (${clusterDetails.alarm_count})`
                   }
                 </h3>
                 <div className="alarms-list">
