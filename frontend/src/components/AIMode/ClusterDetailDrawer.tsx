@@ -83,7 +83,7 @@ function ClusterDetailDrawer({
                   <p className="explanation-note"><strong>Recommendation:</strong> {clusterDetails.explanation.recommendation}</p>
                   {clusterDetails.code_distribution && Object.keys(clusterDetails.code_distribution).length > 0 && (
                     <div className="code-distribution">
-                      <strong>Alarm Code Distribution:</strong>
+                      <strong>Code Distribution:</strong>
                       <div className="code-tags">
                         {Object.entries(clusterDetails.code_distribution).map(([code, count]: [string, any]) => (
                           <span key={code} className="code-tag">
@@ -150,11 +150,11 @@ function ClusterDetailDrawer({
                 </div>
               </div>
 
-              {/* Alarm Detail View */}
+              {/* Record Detail View */}
               {selectedAlarm && (
                 <div className="alarm-detail-panel">
                   <div className="alarm-detail-header">
-                    <h4>Alarm Details</h4>
+                    <h4>{clusterDetails.terminology?.singular || 'Record'} Details</h4>
                     <button 
                       className="close-detail-btn"
                       onClick={() => setSelectedAlarmIndex(null)}
@@ -164,9 +164,9 @@ function ClusterDetailDrawer({
                   </div>
                   
                   <div className="alarm-detail-content">
-                    {/* Alarm Information */}
+                    {/* Record Information */}
                     <div className="detail-section">
-                      <h5>Alarm Information</h5>
+                      <h5>{clusterDetails.terminology?.singular || 'Record'} Information</h5>
                       <div className="detail-grid">
                         <div className="detail-item">
                           <label>Code:</label>
